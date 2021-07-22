@@ -221,7 +221,7 @@ public class Client_Master implements Serializable, XEntity {
             case 8: cGenderCd = (String) foValue; break;
             case 9: cCvilStat = (String) foValue; break;
             case 10: sCitizenx = (String) foValue; break;
-            case 11: dBirthDte = (Date) foValue; break;
+            case 11: dBirthDte = SQLUtil.toDate(String.valueOf(foValue), SQLUtil.FORMAT_SHORT_DATE); break;
             case 12: sBirthPlc = (String) foValue; break;
             case 13: sAddlInfo = (String) foValue; break;
             case 14: sSpouseID = (String) foValue; break;
