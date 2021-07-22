@@ -16,12 +16,13 @@ import org.xersys.commander.contants.EditMode;
 import org.xersys.commander.contants.RecordStatus;
 import org.xersys.commander.iface.XNautilus;
 import org.xersys.commander.iface.XRecord;
+import org.xersys.commander.iface.XSearchTran;
 import org.xersys.commander.util.CommonUtil;
 import org.xersys.commander.util.MiscUtil;
 import org.xersys.commander.util.SQLUtil;
 import org.xersys.lib.pojo.Temp_Transactions;
 
-public class Clients implements XRecord{
+public class Clients implements XRecord, XSearchTran{
     private final String SOURCE_CODE = "CLTx";
     
     private XNautilus p_oNautilus;
@@ -44,6 +45,8 @@ public class Clients implements XRecord{
         p_oNautilus = foNautilus;
         p_sBranchCd = fsBranchCd;
         p_bWithParent = fbWithParent;
+        
+        loadTempTransactions();
     }
     
     @Override
@@ -54,6 +57,8 @@ public class Clients implements XRecord{
             p_sMessagex = "Application driver is not set.";
             return false;
         }
+        
+        p_sTmpTrans = "";
         
         p_oClient = new Client_Master();
         p_oAddress = new ArrayList<>();
@@ -99,8 +104,8 @@ public class Clients implements XRecord{
     }
 
     @Override
-    public boolean SaveRecord() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public boolean SaveRecord(boolean fbConfirmed) {
+        return false;
     }
 
     @Override
@@ -134,8 +139,18 @@ public class Clients implements XRecord{
     }
 
     @Override
-    public String getMessage() {
+    public ArrayList<Temp_Transactions> TempTransactions() {
+        return p_oTemp;
+    }
+    
+    @Override
+    public JSONObject Search(Enum foType, String fsValue, String fsKey, String fsFilter, int fnMaxRow, boolean fbExact) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    @Override
+    public String getMessage() {
+        return p_sMessagex;
     }
 
     @Override
@@ -187,6 +202,12 @@ public class Clients implements XRecord{
             } else
                 CommonUtil.saveTempOrder(p_oNautilus, SOURCE_CODE, p_sTmpTrans, lsPayloadx, fsRecdStat);
         }
+    }
+    
+    public boolean DeleteTempTransaction(Temp_Transactions foValue) {
+        boolean lbSuccess =  CommonUtil.saveTempOrder(p_oNautilus, foValue.getSourceCode(), foValue.getOrderNo(), foValue.getPayload(), "0");
+        loadTempTransactions();
+        return lbSuccess;
     }
     
     private String toJSONString(){
@@ -242,8 +263,8 @@ public class Clients implements XRecord{
         try {
             loJSON = (JSONObject) loParser.parse(fsPayloadx);
             loMaster = (JSONObject) loJSON.get("master");
-            laAddress = (JSONArray) loJSON.get("detail");
-            laMobile = (JSONArray) loJSON.get("others");
+            laAddress = (JSONArray) loJSON.get("address");
+            laMobile = (JSONArray) loJSON.get("mobile");
         
             int lnCtr;
             String key;
@@ -252,7 +273,8 @@ public class Clients implements XRecord{
             
             for(iterator = loMaster.keySet().iterator(); iterator.hasNext();) {
                 key = (String) iterator.next();
-                p_oClient.setValue(key, loMaster.get(key));
+                if (loMaster.get(key) != null)
+                    p_oClient.setValue(key, loMaster.get(key));
             }
             
             JSONObject loAddress;
