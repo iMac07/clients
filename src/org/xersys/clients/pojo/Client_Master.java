@@ -12,6 +12,7 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import org.json.simple.JSONObject;
+import org.xersys.commander.contants.RecordStatus;
 import org.xersys.commander.iface.XEntity;
 import org.xersys.commander.util.SQLUtil;
 
@@ -88,6 +89,9 @@ public class Client_Master implements Serializable, XEntity {
     @Temporal(TemporalType.TIMESTAMP)
     private Date dModified;
     
+    @Column(name = "cSupplier")
+    private String cSupplier;
+    
     LinkedList laColumns = null;
     
     public Client_Master(){
@@ -113,6 +117,7 @@ public class Client_Master implements Serializable, XEntity {
         laColumns.add("cCPClient");
         laColumns.add("cRecdStat");
         laColumns.add("dModified");
+        laColumns.add("cSupplier");
         
         sClientID = "";
         cClientTp = "";
@@ -127,12 +132,13 @@ public class Client_Master implements Serializable, XEntity {
         sBirthPlc = "";
         sAddlInfo = "";
         sSpouseID = "";
-        cLRClient = "";
-        cMCClient = "";
-        cSCClient = "";
-        cSPClient = "";
-        cCPClient = "";
-        cRecdStat = "";
+        cLRClient = "0";
+        cMCClient = "0";
+        cSCClient = "0";
+        cSPClient = "0";
+        cCPClient = "0";
+        cRecdStat = RecordStatus.ACTIVE;
+        cSupplier = "0";
     }
     
     @Override
@@ -181,6 +187,7 @@ public class Client_Master implements Serializable, XEntity {
             case 19: return cCPClient;
             case 20: return cRecdStat;
             case 21: return dModified;
+            case 22: return cSupplier;
             default: return null;
         }
     }
@@ -232,6 +239,7 @@ public class Client_Master implements Serializable, XEntity {
             case 19: cCPClient = (String) foValue; break;
             case 20: cRecdStat = (String) foValue; break;
             case 21: dModified = (Date) foValue; break;
+            case 22: cSupplier = (String) foValue; break;
         }    
     }
 

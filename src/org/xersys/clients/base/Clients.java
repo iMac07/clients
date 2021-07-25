@@ -21,6 +21,7 @@ import org.xersys.commander.util.CommonUtil;
 import org.xersys.commander.util.MiscUtil;
 import org.xersys.commander.util.SQLUtil;
 import org.xersys.lib.pojo.Temp_Transactions;
+import org.xersys.parameters.search.ParameterSearchEngine;
 
 public class Clients implements XRecord, XSearchTran{
     private final String SOURCE_CODE = "CLTx";
@@ -41,11 +42,14 @@ public class Clients implements XRecord, XSearchTran{
     private ArrayList<Client_Address> p_oAddress;
     private ArrayList<Temp_Transactions> p_oTemp;
     
+    private ParameterSearchEngine _search_param;
+    
     public Clients(XNautilus foNautilus, String fsBranchCd, boolean fbWithParent){
         p_oNautilus = foNautilus;
         p_sBranchCd = fsBranchCd;
         p_bWithParent = fbWithParent;
         
+        _search_param = new ParameterSearchEngine(p_oNautilus);
         loadTempTransactions();
     }
     
@@ -145,7 +149,34 @@ public class Clients implements XRecord, XSearchTran{
     
     @Override
     public JSONObject Search(Enum foType, String fsValue, String fsKey, String fsFilter, int fnMaxRow, boolean fbExact) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        JSONObject loJSON = new JSONObject();
+        ParameterSearchEngine loParameter = new ParameterSearchEngine(p_oNautilus);
+        
+        if (_search_param == null){
+            loJSON.put("result", "error");
+            loJSON.put("message", "Parameter search object is not set.");
+            return loJSON;
+        }
+        
+        if (p_nEditMode != EditMode.ADDNEW &&
+            p_nEditMode != EditMode.UPDATE){
+            loJSON.put("result", "error");
+            loJSON.put("message", "Invalid edit mode detected.");
+            return loJSON;        
+        }
+        
+        if (fsValue.isEmpty()){
+            loJSON.put("result", "error");
+            loJSON.put("message", "Search value must not be empty.");
+            return loJSON;        
+        }
+        
+        _search_param.setKey(fsKey);
+        _search_param.setFilter(fsFilter);
+        _search_param.sethMax(fnMaxRow);
+        _search_param.setExact(fbExact);
+
+        return _search_param.Search(foType, fsValue);
     }
     
     @Override
