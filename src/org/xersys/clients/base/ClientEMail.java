@@ -100,7 +100,14 @@ public class ClientEMail {
     }
     
     public int getItemCount(){
-        return p_oMail.size();
+        try {
+            p_oMail.last();
+            return p_oMail.getRow();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            setMessage(e.getMessage());
+            return -1;
+        }
     }
     
     public boolean AddItem() throws SQLException{
@@ -156,7 +163,7 @@ public class ClientEMail {
         return true;
     }
     
-    public void setMaster(int fnRow, String fsFieldNm, Object foValue) throws SQLException, ParseException {
+    public void setDetail(int fnRow, String fsFieldNm, Object foValue) throws SQLException, ParseException {
         if (p_nEditMode != EditMode.ADDNEW &&
             p_nEditMode != EditMode.UPDATE){
             System.err.println("Transaction is not on update mode.");

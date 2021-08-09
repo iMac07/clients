@@ -17,14 +17,14 @@ import org.xersys.commander.contants.EditMode;
 import org.xersys.commander.contants.RecordStatus;
 import org.xersys.commander.iface.XNautilus;
 import org.xersys.commander.iface.XRecord;
-import org.xersys.commander.iface.XSearchTran;
+import org.xersys.commander.iface.XSearchRecord;
 import org.xersys.commander.util.CommonUtil;
 import org.xersys.commander.util.MiscUtil;
 import org.xersys.commander.util.SQLUtil;
 import org.xersys.commander.util.Temp_Transactions;
 import org.xersys.parameters.search.ParameterSearchEngine;
 
-public class NeoClient implements XRecord, XSearchTran{
+public class ClientMaster implements XRecord, XSearchRecord{
     private final String SOURCE_CODE = "CLTx";
     
     private XNautilus p_oNautilus;
@@ -47,7 +47,7 @@ public class NeoClient implements XRecord, XSearchTran{
     
     private ParameterSearchEngine _search_param;
     
-    public NeoClient(XNautilus foNautilus, String fsBranchCd, boolean fbWithParent){
+    public ClientMaster(XNautilus foNautilus, String fsBranchCd, boolean fbWithParent){
         p_oNautilus = foNautilus;
         p_sBranchCd = fsBranchCd;
         p_bWithParent = fbWithParent;
@@ -151,7 +151,7 @@ public class NeoClient implements XRecord, XSearchTran{
 
     @Override
     public boolean SaveRecord(boolean fbConfirmed) {
-        System.out.println(this.getClass().getSimpleName() + ".SaveTransaction()");
+        System.out.println(this.getClass().getSimpleName() + ".SaveRecord()");
         
         if (p_nEditMode != EditMode.ADDNEW &&
             p_nEditMode != EditMode.UPDATE){
@@ -777,5 +777,10 @@ public class NeoClient implements XRecord, XSearchTran{
         
         p_oAddress.insertRow();
         p_oAddress.moveToCurrentRow();
+    }
+
+    @Override
+    public JSONObject SearchRecord(String fsValue, String fsKey, String fsFilter, int fnMaxRow, boolean fbExact) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
