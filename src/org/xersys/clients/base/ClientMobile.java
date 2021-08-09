@@ -100,7 +100,14 @@ public class ClientMobile {
     }
     
     public int getItemCount(){
-        return p_oMobile.size();
+        try {
+            p_oMobile.last();
+            return p_oMobile.getRow();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            setMessage(e.getMessage());
+            return -1;
+        }
     }
     
     public boolean AddItem() throws SQLException{
@@ -158,7 +165,7 @@ public class ClientMobile {
         return true;
     }
     
-    public void setMaster(int fnRow, String fsFieldNm, Object foValue) throws SQLException, ParseException {
+    public void setDetail(int fnRow, String fsFieldNm, Object foValue) throws SQLException, ParseException {
         if (p_nEditMode != EditMode.ADDNEW &&
             p_nEditMode != EditMode.UPDATE){
             System.err.println("Transaction is not on update mode.");
