@@ -21,6 +21,7 @@ import org.xersys.commander.util.CommonUtil;
 import org.xersys.commander.util.MiscUtil;
 import org.xersys.commander.util.SQLUtil;
 import org.xersys.commander.util.Temp_Transactions;
+import org.xersys.parameters.search.ParamSearch;
 
 public class ClientMaster implements XRecord{
     private final String SOURCE_CODE = "CLTx";
@@ -41,6 +42,9 @@ public class ClientMaster implements XRecord{
     private CachedRowSet p_oAddress;
     private CachedRowSet p_oMail;
     
+    private ParamSearch p_oCountry;
+    private ParamSearch p_oTownCity;
+    
     private ArrayList<Temp_Transactions> p_oTemp;
     
     public ClientMaster(XNautilus foNautilus, String fsBranchCd, boolean fbWithParent){
@@ -48,7 +52,12 @@ public class ClientMaster implements XRecord{
         p_sBranchCd = fsBranchCd;
         p_bWithParent = fbWithParent;
         
+        p_oCountry = new ParamSearch(p_oNautilus, ParamSearch.SearchType.searchCountry);
+        p_oTownCity = new ParamSearch(p_oNautilus, ParamSearch.SearchType.searchTownCity);
+        
         loadTempTransactions();
+        
+         p_nEditMode = EditMode.UNKNOWN;
     }
     
     @Override
@@ -304,77 +313,90 @@ public class ClientMaster implements XRecord{
         p_bSaveToDisk = fbValue;
     }
 
-    public void setMaster(String fsFieldNm, Object foValue) throws SQLException{
+    public void setMaster(String fsFieldNm, Object foValue){
+        String lsProcName = this.getClass().getSimpleName() + ".setMaster()";
+        
         if (p_nEditMode != EditMode.ADDNEW &&
             p_nEditMode != EditMode.UPDATE){
             System.err.println("Transaction is not on update mode.");
             return;
         }
         
-        switch (fsFieldNm){
-            case "xAddressx":
-                p_oAddress = (CachedRowSet) foValue;
-                break;
-            case "xMobileNo":
-                p_oMobile = (CachedRowSet) foValue;
-                
-                p_oMobile.first();
-                p_oListener.MasterRetreive("xMobileNo", (String) p_oMobile.getObject("sMobileNo"));
-                break;
-            case "xEmailAdd":
-                p_oMail = (CachedRowSet) foValue;
-                
-                p_oMail.first();
-                p_oListener.MasterRetreive("xEmailAdd", (String) p_oMail.getObject("sEmailAdd"));
-                break;
-            case "cClientTp":
-                p_oClient.first();
-                p_oClient.updateObject(fsFieldNm, foValue);
-                
-                if (((String) foValue).equals("0")){
-                    p_oClient.updateObject("sClientNm", 
-                                            CommonUtil.nameFormat(
-                                                    (String) p_oClient.getObject("sLastName"), 
-                                                    (String) p_oClient.getObject("sFrstName"), 
-                                                    (String) p_oClient.getObject("sMiddName"), 
-                                                    (String) p_oClient.getObject("sSuffixNm")));
-                }
-                
-                p_oClient.updateRow();
+        try {
+            switch (fsFieldNm){
+                case "xAddressx":
+                    p_oAddress = (CachedRowSet) foValue;
+                    break;
+                case "xMobileNo":
+                    p_oMobile = (CachedRowSet) foValue;
 
-                p_oListener.MasterRetreive(fsFieldNm, p_oClient.getObject(fsFieldNm));
-                p_oListener.MasterRetreive("sClientNm", p_oClient.getObject("sClientNm"));
-                break;
-            case "sLastName":
-            case "sFrstName":
-            case "sMiddName":
-            case "sSuffixNm":
-                p_oClient.first();
-                p_oClient.updateObject(fsFieldNm, foValue);
-                
-                if (p_oClient.getString("cClientTp").equals("0")){
-                    p_oClient.updateObject("sClientNm", 
-                                            CommonUtil.nameFormat(
-                                                    (String) p_oClient.getObject("sLastName"), 
-                                                    (String) p_oClient.getObject("sFrstName"), 
-                                                    (String) p_oClient.getObject("sMiddName"), 
-                                                    (String) p_oClient.getObject("sSuffixNm")));
-                }
-                
-                p_oClient.updateRow();
+                    p_oMobile.first();
+                    p_oListener.MasterRetreive("xMobileNo", (String) p_oMobile.getObject("sMobileNo"));
+                    break;
+                case "xEmailAdd":
+                    p_oMail = (CachedRowSet) foValue;
 
-                p_oListener.MasterRetreive(fsFieldNm, p_oClient.getObject(fsFieldNm));
-                p_oListener.MasterRetreive("sClientNm", p_oClient.getObject("sClientNm"));
-                break;
-            default:
-                p_oClient.first();
-                p_oClient.updateObject(fsFieldNm, foValue);
-                p_oClient.updateRow();
+                    p_oMail.first();
+                    p_oListener.MasterRetreive("xEmailAdd", (String) p_oMail.getObject("sEmailAdd"));
+                    break;
+                case "cClientTp":
+                    p_oClient.first();
+                    p_oClient.updateObject(fsFieldNm, foValue);
 
-                p_oListener.MasterRetreive(fsFieldNm, p_oClient.getObject(fsFieldNm));
+                    if (((String) foValue).equals("0")){
+                        p_oClient.updateObject("sClientNm", 
+                                                CommonUtil.nameFormat(
+                                                        (String) p_oClient.getObject("sLastName"), 
+                                                        (String) p_oClient.getObject("sFrstName"), 
+                                                        (String) p_oClient.getObject("sMiddName"), 
+                                                        (String) p_oClient.getObject("sSuffixNm")));
+                    }
+
+                    p_oClient.updateRow();
+
+                    p_oListener.MasterRetreive(fsFieldNm, p_oClient.getObject(fsFieldNm));
+                    p_oListener.MasterRetreive("sClientNm", p_oClient.getObject("sClientNm"));
+                    break;
+                case "sLastName":
+                case "sFrstName":
+                case "sMiddName":
+                case "sSuffixNm":
+                    p_oClient.first();
+                    p_oClient.updateObject(fsFieldNm, foValue);
+
+                    if (p_oClient.getString("cClientTp").equals("0")){
+                        p_oClient.updateObject("sClientNm", 
+                                                CommonUtil.nameFormat(
+                                                        (String) p_oClient.getObject("sLastName"), 
+                                                        (String) p_oClient.getObject("sFrstName"), 
+                                                        (String) p_oClient.getObject("sMiddName"), 
+                                                        (String) p_oClient.getObject("sSuffixNm")));
+                    }
+
+                    p_oClient.updateRow();
+
+                    p_oListener.MasterRetreive(fsFieldNm, p_oClient.getObject(fsFieldNm));
+                    p_oListener.MasterRetreive("sClientNm", p_oClient.getObject("sClientNm"));
+                    break;
+                case "sCitizenx":
+                    getCountry((String) foValue);
+                    break;
+                case "sBirthPlc":
+                    getBirthPlace((String) foValue);
+                    break;
+                default:
+                    p_oClient.first();
+                    p_oClient.updateObject(fsFieldNm, foValue);
+                    p_oClient.updateRow();
+
+                    p_oListener.MasterRetreive(fsFieldNm, p_oClient.getObject(fsFieldNm));
+            }
+
+            saveToDisk(RecordStatus.ACTIVE);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            setMessage("SQLException on " + lsProcName + ". Please inform your System Admin.");
         }
-        
-        saveToDisk(RecordStatus.ACTIVE);
     }
 
     public Object getMaster(String fsFieldNm) throws SQLException{
@@ -420,6 +442,110 @@ public class ClientMaster implements XRecord{
         boolean lbSuccess =  CommonUtil.saveTempOrder(p_oNautilus, foValue.getSourceCode(), foValue.getOrderNo(), foValue.getPayload(), "0");
         loadTempTransactions();
         return lbSuccess;
+    }
+    
+    public JSONObject searchCountry(String fsKey, Object foValue, String fsFilter, String fsValue, boolean fbExact){
+        p_oCountry.setKey(fsKey);
+        p_oCountry.setValue(foValue);
+        p_oCountry.setExact(fbExact);
+        
+        return p_oCountry.Search();
+    }
+    
+    public ParamSearch getSearchCountry(){
+        return p_oCountry;
+    }
+    
+    public JSONObject searchTownCity(String fsKey, Object foValue, String fsFilter, String fsValue, boolean fbExact){
+        p_oTownCity.setKey(fsKey);
+        p_oTownCity.setValue(foValue);
+        p_oTownCity.setExact(fbExact);
+        
+        return p_oTownCity.Search();
+    }
+    
+    public ParamSearch getSearchTownCity(){
+        return p_oTownCity;
+    }
+    
+    private void getCountry(String foValue){
+        String lsProcName = this.getClass().getSimpleName() + ".getCountry()";
+        
+        JSONObject loJSON = searchCountry("sCntryCde", foValue, "", "", true);
+        if ("success".equals((String) loJSON.get("result"))){
+            try {
+                JSONParser loParser = new JSONParser();
+
+                p_oClient.first();
+                try {
+                    JSONArray loArray = (JSONArray) loParser.parse((String) loJSON.get("payload"));
+
+                    switch (loArray.size()){
+                        case 0:
+                            p_oClient.updateObject("sCntryCde", "");
+                            p_oClient.updateObject("sCntryNme", "");
+                            p_oClient.updateRow();
+                            break;
+                        default:
+                            loJSON = (JSONObject) loArray.get(0);
+                            p_oClient.updateObject("sCitizenx", (String) loJSON.get("sCntryCde"));
+                            p_oClient.updateObject("sCntryNme", (String) loJSON.get("sCntryNme"));
+                            p_oClient.updateRow();
+                    }
+                } catch (ParseException ex) {
+                    ex.printStackTrace();
+                    p_oListener.MasterRetreive("sCitizenx", "");
+                    p_oListener.MasterRetreive("sCntryNme", "");
+                    p_oClient.updateRow();
+                }
+
+                p_oListener.MasterRetreive("sCitizenx", (String) p_oClient.getObject("sCitizenx"));
+                p_oListener.MasterRetreive("sCntryNme", (String) p_oClient.getObject("sCntryNme"));
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                setMessage("SQLException on " + lsProcName + ". Please inform your System Admin.");
+            }
+        }
+    }
+    
+    private void getBirthPlace(String foValue){
+        String lsProcName = this.getClass().getSimpleName() + ".getBirthPlace()";
+        
+        JSONObject loJSON = searchTownCity("sTownIDxx", foValue, "", "", true);
+        if ("success".equals((String) loJSON.get("result"))){
+            try {
+                JSONParser loParser = new JSONParser();
+                
+                p_oClient.first();
+                try {
+                    JSONArray loArray = (JSONArray) loParser.parse((String) loJSON.get("payload"));
+
+                    switch (loArray.size()){
+                        case 0:
+                            p_oClient.updateObject("sBirthPlc", "");
+                            p_oClient.updateObject("sTownName", "");
+                            p_oClient.updateRow();
+                            break;
+                        default:
+                            loJSON = (JSONObject) loArray.get(0);
+                            p_oClient.updateObject("sBirthPlc", (String) loJSON.get("sTownIDxx"));
+                            p_oClient.updateObject("sTownName", (String) loJSON.get("sTownName"));
+                            p_oClient.updateRow();
+                    }
+                } catch (ParseException ex) {
+                    ex.printStackTrace();
+                    p_oListener.MasterRetreive("sBirthPlc", "");
+                    p_oListener.MasterRetreive("sTownName", "");
+                    p_oClient.updateRow();
+                }
+
+                p_oListener.MasterRetreive("sBirthPlc", (String) p_oClient.getObject("sBirthPlc"));
+                p_oListener.MasterRetreive("sTownName", (String) p_oClient.getObject("sTownName"));
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                setMessage("SQLException on " + lsProcName + ". Please inform your System Admin.");
+            }
+        }
     }
     
     private String toJSONString(){
@@ -644,7 +770,11 @@ public class ClientMaster implements XRecord{
                     ", a.cSupplier" +
                     ", a.cRecdStat" +
                     ", a.dModified" +
-                " FROM Client_Master a";
+                    ", b.sCntryNme" +
+                    ", c.sTownName" +
+                " FROM Client_Master a" +
+                    " LEFT JOIN Country b ON a.sCitizenx = b.sCntryCde" +
+                    " LEFT JOIN TownCity c ON a.sBirthPlc = c.sTownIDxx";
     }
     
     private String getSQ_Mobile(){
