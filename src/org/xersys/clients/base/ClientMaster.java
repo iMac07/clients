@@ -21,7 +21,7 @@ import org.xersys.commander.util.CommonUtil;
 import org.xersys.commander.util.MiscUtil;
 import org.xersys.commander.util.SQLUtil;
 import org.xersys.commander.util.Temp_Transactions;
-import org.xersys.parameters.search.ParamSearch;
+import org.xersys.parameters.search.ParamSearchF;
 
 public class ClientMaster implements XRecord{
     private final String SOURCE_CODE = "CLTx";
@@ -42,8 +42,8 @@ public class ClientMaster implements XRecord{
     private CachedRowSet p_oAddress;
     private CachedRowSet p_oMail;
     
-    private ParamSearch p_oCountry;
-    private ParamSearch p_oTownCity;
+    private ParamSearchF p_oCountry;
+    private ParamSearchF p_oTownCity;
     
     private ArrayList<Temp_Transactions> p_oTemp;
     
@@ -52,12 +52,17 @@ public class ClientMaster implements XRecord{
         p_sBranchCd = fsBranchCd;
         p_bWithParent = fbWithParent;
         
-        p_oCountry = new ParamSearch(p_oNautilus, ParamSearch.SearchType.searchCountry);
-        p_oTownCity = new ParamSearch(p_oNautilus, ParamSearch.SearchType.searchTownCity);
+        p_oCountry = new ParamSearchF(p_oNautilus, ParamSearchF.SearchType.searchCountry);
+        p_oTownCity = new ParamSearchF(p_oNautilus, ParamSearchF.SearchType.searchTownCity);
         
         loadTempTransactions();
         
          p_nEditMode = EditMode.UNKNOWN;
+    }
+    
+    @Override
+    public int getEditMode() {
+        return p_nEditMode;
     }
     
     @Override
@@ -146,7 +151,7 @@ public class ClientMaster implements XRecord{
         }
         
         p_sTmpTrans = fsTmpTrans;
-        p_nEditMode = EditMode.ADDNEW;
+        p_nEditMode = EditMode.UPDATE;
         
         loadTempTransactions();
         
@@ -170,7 +175,7 @@ public class ClientMaster implements XRecord{
         
         String lsSQL = "";
         
-        //if (!isEntryOK()) return false;
+        if (!isEntryOK()) return false;
 
         try {
             if (!p_bWithParent) p_oNautilus.beginTrans();
@@ -224,7 +229,7 @@ public class ClientMaster implements XRecord{
                     }
                 }
                 
-                lsSQL = MiscUtil.rowset2SQL(p_oClient, "Client_Master", "");
+                lsSQL = MiscUtil.rowset2SQL(p_oClient, "Client_Master", "sCntryNme;sTownName");
             } else { //old record
             }
             
@@ -275,7 +280,7 @@ public class ClientMaster implements XRecord{
             return false;
         }
         
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return true;
     }
 
     @Override
@@ -441,6 +446,8 @@ public class ClientMaster implements XRecord{
     public boolean DeleteTempTransaction(Temp_Transactions foValue) {
         boolean lbSuccess =  CommonUtil.saveTempOrder(p_oNautilus, foValue.getSourceCode(), foValue.getOrderNo(), foValue.getPayload(), "0");
         loadTempTransactions();
+        
+        p_nEditMode = EditMode.UNKNOWN;
         return lbSuccess;
     }
     
@@ -452,7 +459,7 @@ public class ClientMaster implements XRecord{
         return p_oCountry.Search();
     }
     
-    public ParamSearch getSearchCountry(){
+    public ParamSearchF getSearchCountry(){
         return p_oCountry;
     }
     
@@ -464,7 +471,7 @@ public class ClientMaster implements XRecord{
         return p_oTownCity.Search();
     }
     
-    public ParamSearch getSearchTownCity(){
+    public ParamSearchF getSearchTownCity(){
         return p_oTownCity;
     }
     
@@ -870,5 +877,24 @@ public class ClientMaster implements XRecord{
         
         p_oAddress.insertRow();
         p_oAddress.moveToCurrentRow();
+    }
+    
+    private boolean isEntryOK(){
+        try {
+            //assign values to master record
+            p_oClient.first();
+            
+            if (((String)getMaster("sLastName")).equals("") ||
+                ((String)getMaster("sFrstName")).equals("")) {
+                setMessage("Client first name or last name must not be empty.");
+                return false;
+            }           
+
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            setMessage(e.getMessage());
+            return false;
+        }
     }
 }
