@@ -127,7 +127,6 @@ public class ClientMaster implements XRecord{
         return true;
     }
     
-    @Override
     public boolean NewRecord(String fsTmpTrans) {
         System.out.println(this.getClass().getSimpleName() + ".NewRecord(String fsTmpTrans)");
         
@@ -159,18 +158,13 @@ public class ClientMaster implements XRecord{
     }
 
     @Override
-    public boolean SaveRecord(boolean fbConfirmed) {
+    public boolean SaveRecord() {
         System.out.println(this.getClass().getSimpleName() + ".SaveRecord()");
         
         if (p_nEditMode != EditMode.ADDNEW &&
             p_nEditMode != EditMode.UPDATE){
             System.err.println("Transaction is not on update mode.");
             return false;
-        }
-        
-        if (!fbConfirmed){
-            saveToDisk(RecordStatus.ACTIVE);
-            return true;
         }
         
         String lsSQL = "";
@@ -298,7 +292,6 @@ public class ClientMaster implements XRecord{
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    @Override
     public ArrayList<Temp_Transactions> TempTransactions() {
         return p_oTemp;
     }
@@ -313,11 +306,11 @@ public class ClientMaster implements XRecord{
         p_oListener = (LRecordMas) foListener;
     }
     
-    @Override
     public void setSaveToDisk(boolean fbValue) {
         p_bSaveToDisk = fbValue;
     }
 
+    @Override
     public void setMaster(String fsFieldNm, Object foValue){
         String lsProcName = this.getClass().getSimpleName() + ".setMaster()";
         
@@ -404,16 +397,21 @@ public class ClientMaster implements XRecord{
         }
     }
 
-    public Object getMaster(String fsFieldNm) throws SQLException{
-        p_oClient.first();
-        switch (fsFieldNm){
-            case "xMobileNo":
-                p_oMobile.first();
-                return (String) p_oMobile.getObject("sMobileNo");
-            case "xAddressx":
-                return "";
-            default:
-                return p_oClient.getObject(fsFieldNm);
+    @Override
+    public Object getMaster(String fsFieldNm){
+        try {
+            p_oClient.first();
+            switch (fsFieldNm){
+                case "xMobileNo":
+                    p_oMobile.first();
+                    return (String) p_oMobile.getObject("sMobileNo");
+                case "xAddressx":
+                    return "";
+                default:
+                    return p_oClient.getObject(fsFieldNm);
+            }
+        } catch (SQLException e) {
+            return null;
         }
     }
     
