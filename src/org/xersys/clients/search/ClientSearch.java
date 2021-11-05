@@ -334,6 +334,12 @@ public class ClientSearch implements iSearch{
             case searchSupplier:
                 lsSQL = MiscUtil.addCondition(getSQ_Client(), "cSupplier = '1'");
                 break;
+            case searchMechanic:
+                lsSQL = MiscUtil.addCondition(getSQ_Client(), "cMechanic = '1'");
+                break;
+            case searchServiceAdvisor:
+                lsSQL = MiscUtil.addCondition(getSQ_Client(), "cSrvcAdvs = '1'");
+                break;
             default:
                 break;
         }
@@ -391,6 +397,8 @@ public class ClientSearch implements iSearch{
         if (null != _search_type)switch (_search_type) {
             case searchClient:
             case searchSupplier:
+            case searchMechanic:
+            case searchServiceAdvisor:
                 _fields.add("sClientID"); _fields_descript.add("ID");
                 _fields.add("sClientNm"); _fields_descript.add("Name");
                 
@@ -432,6 +440,8 @@ public class ClientSearch implements iSearch{
                     ", a.sSpouseID" +
                     ", a.cCustomer" +
                     ", a.cSupplier" +
+                    ", a.cMechanic" +
+                    ", a.cSrvcAdvs" +
                     ", a.cRecdStat" +
                 " FROM Client_Master a";
     }
@@ -439,6 +449,8 @@ public class ClientSearch implements iSearch{
     //let outside objects can call this variable without initializing the class.
     public static enum SearchType{
         searchClient,
-        searchSupplier
+        searchSupplier,
+        searchMechanic,
+        searchServiceAdvisor
     }
 }
