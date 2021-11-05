@@ -26,24 +26,24 @@ import org.xersys.parameters.search.ParamSearchF;
 public class ClientMaster implements XRecord{
     private final String SOURCE_CODE = "CLTx";
     
-    private XNautilus p_oNautilus;
-    private LRecordMas p_oListener;
+    private final XNautilus p_oNautilus;
+    private final boolean p_bWithParent;
+    private final String p_sBranchCd;
     
-    private String p_sBranchCd;
+    
+    private LRecordMas p_oListener;
+    private boolean p_bSaveToDisk;
     private String p_sMessagex;
     private String p_sTmpTrans;
-    
     private int p_nEditMode;
-    private boolean p_bWithParent;
-    private boolean p_bSaveToDisk;
     
     private CachedRowSet p_oClient;
     private CachedRowSet p_oMobile;
     private CachedRowSet p_oAddress;
     private CachedRowSet p_oMail;
     
-    private ParamSearchF p_oCountry;
-    private ParamSearchF p_oTownCity;
+    private final ParamSearchF p_oCountry;
+    private final ParamSearchF p_oTownCity;
     
     private ArrayList<Temp_Transactions> p_oTemp;
     
@@ -207,11 +207,31 @@ public class ClientMaster implements XRecord{
                 p_oMail.beforeFirst();
                 while (p_oMail.next()){
                     if (!"".equals((String) p_oMail.getObject("sEmailAdd"))){
-                        p_oMail.updateObject("sClientID", p_oMail.getObject("sClientID"));
+                        p_oMail.updateObject("sClientID", p_oClient.getObject("sClientID"));
                     
                         lsSQL = MiscUtil.rowset2SQL(p_oMail, "Client_eMail_Address", "");
 
                         if(p_oNautilus.executeUpdate(lsSQL, "Client_eMail_Address", p_sBranchCd, "") <= 0){
+                            if(!p_oNautilus.getMessage().isEmpty())
+                                setMessage(p_oNautilus.getMessage());
+                            else
+                                setMessage("No record updated");
+
+                            if (!p_bWithParent) p_oNautilus.rollbackTrans();
+                            return false;
+                        } 
+                    }
+                }
+                
+                //save address
+                p_oAddress.beforeFirst();
+                while (p_oAddress.next()){
+                    if (!"".equals((String) p_oAddress.getObject("sAddressx"))){
+                        p_oAddress.updateObject("sClientID", p_oClient.getObject("sClientID"));
+                    
+                        lsSQL = MiscUtil.rowset2SQL(p_oAddress, "Client_Address", "xBrgyName;xTownName;xProvName");
+
+                        if(p_oNautilus.executeUpdate(lsSQL, "Client_Address", p_sBranchCd, "xBrgyName;xTownName;xProvName") <= 0){
                             if(!p_oNautilus.getMessage().isEmpty())
                                 setMessage(p_oNautilus.getMessage());
                             else
@@ -257,6 +277,7 @@ public class ClientMaster implements XRecord{
             return false;
         }
         
+        loadTempTransactions();
         p_nEditMode = EditMode.UNKNOWN;
         
         return true;
@@ -291,10 +312,6 @@ public class ClientMaster implements XRecord{
     public boolean ActivateRecord(String fsTransNox) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-
-    public ArrayList<Temp_Transactions> TempTransactions() {
-        return p_oTemp;
-    }
     
     @Override
     public String getMessage() {
@@ -324,6 +341,21 @@ public class ClientMaster implements XRecord{
             switch (fsFieldNm){
                 case "xAddressx":
                     p_oAddress = (CachedRowSet) foValue;
+                    
+                    p_oAddress.first();
+                    String lsAddress = (String) p_oAddress.getObject("sHouseNox") + " " + 
+                                        (String) p_oAddress.getObject("sAddressx");
+                    
+                    if (!"".equals((String) p_oAddress.getObject("xBrgyName"))){
+                        lsAddress += " " + (String) p_oAddress.getObject("xBrgyName");
+                    }
+                    
+                    if (!"".equals((String) p_oAddress.getObject("xTownName"))){
+                        lsAddress += " " + (String) p_oAddress.getObject("xTownName") + ", " +
+                                        (String) p_oAddress.getObject("xProvName");
+                    }
+
+                    p_oListener.MasterRetreive("xAddressx", lsAddress);
                     break;
                 case "xMobileNo":
                     p_oMobile = (CachedRowSet) foValue;
@@ -406,7 +438,23 @@ public class ClientMaster implements XRecord{
                     p_oMobile.first();
                     return (String) p_oMobile.getObject("sMobileNo");
                 case "xAddressx":
-                    return "";
+                    p_oAddress.first();
+                    String lsAddress = (String) p_oAddress.getObject("sHouseNox") + " " + 
+                                        (String) p_oAddress.getObject("sAddressx");
+                    
+                    if (!"".equals((String) p_oAddress.getObject("xBrgyName"))){
+                        lsAddress += " " + (String) p_oAddress.getObject("xBrgyName");
+                    }
+                    
+                    if (!"".equals((String) p_oAddress.getObject("xTownName"))){
+                        lsAddress += " " + (String) p_oAddress.getObject("xTownName") + ", " +
+                                        (String) p_oAddress.getObject("xProvName");
+                    }
+                    
+                    return lsAddress.trim();
+                case "xEmailAdd":
+                    p_oMail.first();
+                    return (String) p_oMail.getObject("sEmailAdd");
                 default:
                     return p_oClient.getObject(fsFieldNm);
             }
@@ -563,17 +611,17 @@ public class ClientMaster implements XRecord{
         JSONObject loJSON;
 
         try {
-            String lsValue = MiscUtil.RS2JSON(p_oClient).toJSONString();
+            String lsValue = MiscUtil.RS2JSONi(p_oClient).toJSONString();
             laMaster = (JSONArray) loParser.parse(lsValue);
             loMaster = (JSONObject) laMaster.get(0);
             
-            lsValue = MiscUtil.RS2JSON(p_oAddress).toJSONString();
+            lsValue = MiscUtil.RS2JSONi(p_oAddress).toJSONString();
             laAddress = (JSONArray) loParser.parse(lsValue);
             
-            lsValue = MiscUtil.RS2JSON(p_oMobile).toJSONString();
+            lsValue = MiscUtil.RS2JSONi(p_oMobile).toJSONString();
             laMobile = (JSONArray) loParser.parse(lsValue);
             
-            lsValue = MiscUtil.RS2JSON(p_oMail).toJSONString();
+            lsValue = MiscUtil.RS2JSONi(p_oMail).toJSONString();
             laEMail = (JSONArray) loParser.parse(lsValue);
  
             loJSON = new JSONObject();
@@ -645,21 +693,25 @@ public class ClientMaster implements XRecord{
             
             int lnCtr;
             int lnRow;
-            String key;
+            int lnKey;
+            String lsKey;
+            String lsIndex;
             Iterator iterator;
 
             lnRow = 1;
             addClientRow();
             for(iterator = loMaster.keySet().iterator(); iterator.hasNext();) {
-                key = (String) iterator.next();
+                lsIndex = (String) iterator.next(); //string value of int
+                lnKey = Integer.valueOf(lsIndex); //string to in
+                lsKey = p_oClient.getMetaData().getColumnLabel(lnKey); //int to metadata
                 p_oClient.absolute(lnRow);
-                if (loMaster.get(key) != null){
-                    switch(key){
+                if (loMaster.get(lsIndex) != null){
+                    switch(lsKey){
                         case "dBirthDte":
-                            p_oClient.updateObject(key, SQLUtil.toDate((String) loMaster.get(key), SQLUtil.FORMAT_SHORT_DATE));
+                            p_oClient.updateObject(lnKey, SQLUtil.toDate((String) loMaster.get(lsIndex), SQLUtil.FORMAT_SHORT_DATE));
                             break;
                         default:
-                            p_oClient.updateObject(key, loMaster.get(key));
+                            p_oClient.updateObject(lnKey, loMaster.get(lsIndex));
                     }
 
                     p_oClient.updateRow();
@@ -672,9 +724,10 @@ public class ClientMaster implements XRecord{
 
                 addAddressRow();
                 for(iterator = loAddress.keySet().iterator(); iterator.hasNext();) {
-                    key = (String) iterator.next();
+                    lsIndex = (String) iterator.next(); //string value of int
+                    lnKey = Integer.valueOf(lsIndex); //string to in
                     p_oAddress.absolute(lnRow);
-                    p_oAddress.updateObject(key, loAddress.get(key));
+                    p_oAddress.updateObject(lnKey, loAddress.get(lsIndex));
                     p_oAddress.updateRow();
                 }
                 lnRow++;
@@ -686,16 +739,18 @@ public class ClientMaster implements XRecord{
             
                 addMobileRow();
                 for(iterator = loMobile.keySet().iterator(); iterator.hasNext();) {
-                    key = (String) iterator.next();
+                    lsIndex = (String) iterator.next(); //string value of int
+                    lnKey = Integer.valueOf(lsIndex); //string to in
+                    lsKey = p_oMobile.getMetaData().getColumnLabel(lnKey); //int to metadata
                     p_oMobile.absolute(lnRow);
                     
-                    switch (key){
+                    switch (lsKey){
                         case "nEntryNox":
                         case "nPriority":
-                            p_oMobile.updateObject(key, (int) (long) loMobile.get(key));
+                            p_oMobile.updateObject(lnKey, (int) (long) loMobile.get(lsIndex));
                             break;
                         default:
-                            p_oMobile.updateObject(key, loMobile.get(key));
+                            p_oMobile.updateObject(lnKey, loMobile.get(lsIndex));
                     }
                     
                     p_oMobile.updateRow();
@@ -709,16 +764,18 @@ public class ClientMaster implements XRecord{
             
                 addEMailRow();
                 for(iterator = loMail.keySet().iterator(); iterator.hasNext();) {
-                    key = (String) iterator.next();
+                    lsIndex = (String) iterator.next(); //string value of int
+                    lnKey = Integer.valueOf(lsIndex); //string to in
+                    lsKey = p_oMail.getMetaData().getColumnLabel(lnKey); //int to metadata
                     p_oMail.absolute(lnRow);
                     
-                    switch (key){
+                    switch (lsKey){
                         case "nEntryNox":
                         case "nPriority":
-                            p_oMail.updateObject(key, (int) (long) loMail.get(key));
+                            p_oMail.updateObject(lnKey, (int) (long) loMail.get(lsIndex));
                             break;
                         default:
-                            p_oMail.updateObject(key, loMail.get(key));
+                            p_oMail.updateObject(lnKey, loMail.get(lsIndex));
                     }
                     
                     p_oMail.updateRow();
@@ -755,6 +812,10 @@ public class ClientMaster implements XRecord{
         p_oTemp = CommonUtil.loadTempTransactions(p_oNautilus, SOURCE_CODE);
     }
     
+    public ArrayList<Temp_Transactions> TempTransactions() {
+        return p_oTemp;
+    }
+    
     private String getSQ_Master(){
         return "SELECT" +
                     "  a.sClientID" +
@@ -773,6 +834,8 @@ public class ClientMaster implements XRecord{
                     ", a.sSpouseID" +
                     ", a.cCustomer" +
                     ", a.cSupplier" +
+                    ", a.cMechanic" +
+                    ", a.cSrvcAdvs" +
                     ", a.cRecdStat" +
                     ", a.dModified" +
                     ", b.sCntryNme" +
@@ -808,7 +871,7 @@ public class ClientMaster implements XRecord{
     private String getSQ_Address(){
         return "SELECT" +
                     "  a.sClientID" +
-                    ", a.nEntryNox" +	
+                    ", a.nEntryNox" +
                     ", a.sHouseNox" +
                     ", a.sAddressx" +
                     ", a.sBrgyIDxx" +
@@ -818,8 +881,13 @@ public class ClientMaster implements XRecord{
                     ", a.nLongitud" +
                     ", a.cPrimaryx" +
                     ", a.cRecdStat" +
+                    ", IFNULL(b.sBrgyName, '') xBrgyName" +
+                    ", IFNULL(c.sTownName, '') xTownName" +
+                    ", IFNULL(d.sProvName, '') xProvName" +
                 " FROM Client_Address a" +
-                    " LEFT JOIN TownCity b ON a.sTownIDxx = b.sTownIDxx" +
+                    " LEFT JOIN Barangay b ON a.sBrgyIDxx = b.sBrgyIDxx" +
+                    " LEFT JOIN TownCity c ON a.sTownIDxx = c.sTownIDxx" +        
+                    " LEFT JOIN Province d ON c.sProvIDxx = d.sProvIDxx" +
                 " ORDER BY a.nPriority";
     }
     
@@ -872,6 +940,10 @@ public class ClientMaster implements XRecord{
         p_oAddress.moveToInsertRow();
         
         MiscUtil.initRowSet(p_oAddress);
+        p_oAddress.updateObject("nEntryNox", p_oAddress.size() + 1);
+        p_oAddress.updateObject("nPriority", p_oAddress.size() + 1);
+        p_oAddress.updateObject("cPrimaryx", "1");
+        p_oAddress.updateObject("cRecdStat", "1");
         
         p_oAddress.insertRow();
         p_oAddress.moveToCurrentRow();
