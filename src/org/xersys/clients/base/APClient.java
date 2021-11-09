@@ -74,15 +74,13 @@ public class APClient implements XRecord{
             p_oAPClient = factory.createCachedRowSet();
             p_oAPClient.populate(loRS);
             MiscUtil.close(loRS);
-            initMaster();
-
+            initMaster();           
         } catch (SQLException ex) {
             setMessage(ex.getMessage());
             return false;
         }
         
         p_nEditMode = EditMode.ADDNEW;
-        
         return true;
     }
 
@@ -110,9 +108,9 @@ public class APClient implements XRecord{
                 
                 if (!p_bWithParent) MiscUtil.close(loConn);
                 
-                lsSQL = MiscUtil.rowset2SQL(p_oAPClient, MASTER_TABLE, "xClientNm;xLastName;xFrstName;xMiddName;xAddressx;xTermName");
+                lsSQL = MiscUtil.rowset2SQL(p_oAPClient, MASTER_TABLE, "sClientNm;sLastName;sFrstName;sMiddName;sSuffixNm;xAddressx;xTermName");
             } else { //old record
-                lsSQL = MiscUtil.rowset2SQL(p_oAPClient, MASTER_TABLE, "xClientNm;xLastName;xFrstName;xMiddName;xAddressx;xTermName", "a.sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")));
+                lsSQL = MiscUtil.rowset2SQL(p_oAPClient, MASTER_TABLE, "sClientNm;sLastName;sFrstName;sMiddName;sSuffixNm;xAddressx;xTermName", "sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")));
             }
             
             if (lsSQL.equals("")){
@@ -127,14 +125,14 @@ public class APClient implements XRecord{
                     setMessage(p_oNautilus.getMessage());
                 else
                     setMessage("No record updated");
+                
+                if (!p_bWithParent) p_oNautilus.rollbackTrans();
+                
+                p_nEditMode = EditMode.UNKNOWN;
+                return false;
             } 
 
-            if (!p_bWithParent) {
-                if (!p_sMessagex.isEmpty())
-                    p_oNautilus.rollbackTrans();
-                else
-                    p_oNautilus.commitTrans();
-            }    
+            if (!p_bWithParent) p_oNautilus.commitTrans();
         } catch (SQLException ex) {
             if (!p_bWithParent) p_oNautilus.rollbackTrans();
             
@@ -144,7 +142,6 @@ public class APClient implements XRecord{
         }
         
         p_nEditMode = EditMode.UNKNOWN;
-        
         return true;
     }
 
@@ -170,7 +167,7 @@ public class APClient implements XRecord{
             if (p_oAPClient != null){
                 p_oAPClient.first();
 
-                if (p_oAPClient.getString("sStockIDx").equals(fsClientID)){
+                if (p_oAPClient.getString("sClientID").equals(fsClientID)){
                     p_nEditMode  = EditMode.READY;
                     return true;
                 }
@@ -183,8 +180,8 @@ public class APClient implements XRecord{
             
             //open master record
             lsSQL = MiscUtil.addCondition(getSQ_Master(), 
-                        " sClientID = " + SQLUtil.toSQL(fsClientID) +
-                        " AND sBranchCd = " + SQLUtil.toSQL(p_sBranchCd));
+                        " a.sClientID = " + SQLUtil.toSQL(fsClientID) +
+                            " AND a.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd));
             loRS = p_oNautilus.executeQuery(lsSQL);
             p_oAPClient = factory.createCachedRowSet();
             p_oAPClient.populate(loRS);
@@ -195,7 +192,22 @@ public class APClient implements XRecord{
                 return true;
             }
             
-            setMessage("No record loaded.");
+            if (NewRecord()){
+                ClientMaster loClient = new ClientMaster(p_oNautilus, p_sBranchCd, true);
+                
+                if (loClient.OpenRecord(fsClientID)){
+                    p_oAPClient.first();
+                    p_oAPClient.updateObject(1, (String) loClient.getMaster("sClientID"));
+                    p_oAPClient.updateObject(18, (String) loClient.getMaster("sClientNm"));
+                    p_oAPClient.updateObject(19, (String) loClient.getMaster("sLastName"));
+                    p_oAPClient.updateObject(20, (String) loClient.getMaster("sFrstName"));
+                    p_oAPClient.updateObject(21, (String) loClient.getMaster("sMiddName"));
+                    p_oAPClient.updateObject(22, (String) loClient.getMaster("sSuffixNm"));
+                    p_oAPClient.updateObject(23, (String) loClient.getMaster("xAddressx"));
+                    p_oAPClient.updateRow();
+                    return true;
+                }
+            }
         } catch (SQLException ex) {
             ex.printStackTrace();
             setMessage(ex.getMessage());
@@ -229,10 +241,20 @@ public class APClient implements XRecord{
     public void setListener(Object foListener) {
         p_oListener = (LRecordMas) foListener;
     }
+    
+    @Override
+    public Object getMaster(int fnIndex) {
+        try {
+            p_oAPClient.first();
+            return p_oAPClient.getObject(fnIndex);
+        } catch (SQLException e) {
+            return null;
+        }
+    }
 
     @Override
-    public void setMaster(String fsFieldNm, Object foValue){
-        String lsProcName = this.getClass().getSimpleName() + ".setMaster()";
+    public void setMaster(int fnIndex, Object foValue) {
+        String lsProcName = this.getClass().getSimpleName() + ".setMaster(int fnIndex, Object foValue)";
         
         if (p_nEditMode != EditMode.ADDNEW &&
             p_nEditMode != EditMode.UPDATE){
@@ -241,45 +263,57 @@ public class APClient implements XRecord{
         }
         
         try {
-            switch (fsFieldNm){
-                case "nDiscount":
-                case "nCredLimt":
-                case "nBalForwd":
-                case "nOBalance":
-                case "nABalance":
+            switch (fnIndex){
+                case 9: //nDiscount
+                case 10: //nCredLimt
+                case 12: //nBalForwd
+                case 13: //nOBalance
+                case 14: //nABalance
                     p_oAPClient.first();
                     
                     if (StringUtil.isNumeric(String.valueOf(foValue))){
-                        p_oAPClient.updateObject(fsFieldNm, foValue);
+                        p_oAPClient.updateObject(fnIndex, foValue);
                         p_oAPClient.updateRow();
                     }
                     
-                    p_oListener.MasterRetreive(fsFieldNm, p_oAPClient.getObject(fsFieldNm));
+                    p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
                     break;
-                case "dBalForwd":
-                case "dCltSince":
+                case 11: //dBalForwd
+                case 15: //dCltSince
                     p_oAPClient.first();
                     
-                    if (StringUtil.isDate(fsFieldNm, SQLUtil.FORMAT_SHORT_DATE)){
-                        p_oAPClient.updateObject(fsFieldNm, foValue);
+                    if (StringUtil.isDate((String) foValue, SQLUtil.FORMAT_SHORT_DATE)){
+                        p_oAPClient.updateObject(fnIndex, foValue);
                         p_oAPClient.updateRow();
                     }
                     
-                    p_oListener.MasterRetreive(fsFieldNm, p_oAPClient.getObject(fsFieldNm));
+                    p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
                     break;
-                case "sClientID":
+                case 1: //sClientID
                     getClient((String) foValue);
                     break;
-                case "sTermCode":
+                case 8: //sTermCode
                     getTerm((String) foValue);
                     break;
                 default:
                     p_oAPClient.first();
-                    p_oAPClient.updateObject(fsFieldNm, foValue);
+                    p_oAPClient.updateObject(fnIndex, foValue);
                     p_oAPClient.updateRow();
 
-                    p_oListener.MasterRetreive(fsFieldNm, p_oAPClient.getObject(fsFieldNm));
+                    p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            setMessage("SQLException on " + lsProcName + ". Please inform your System Admin.");
+        }
+    }
+
+    @Override
+    public void setMaster(String fsIndex, Object foValue){
+        String lsProcName = this.getClass().getSimpleName() + ".setMaster(String fsIndex, Object foValue)";
+        
+        try {
+            setMaster(MiscUtil.getColumnIndex(p_oAPClient, fsIndex), foValue);
         } catch (SQLException e) {
             e.printStackTrace();
             setMessage("SQLException on " + lsProcName + ". Please inform your System Admin.");
@@ -289,8 +323,7 @@ public class APClient implements XRecord{
     @Override
     public Object getMaster(String fsFieldNm){
         try {
-            p_oAPClient.first();
-            return p_oAPClient.getObject(fsFieldNm);
+            return getMaster(MiscUtil.getColumnIndex(p_oAPClient, fsFieldNm));
         } catch (SQLException e) {
             return null;
         }
@@ -435,7 +468,7 @@ public class APClient implements XRecord{
     
     private String getSQ_Master(){
         return "SELECT" +
-                    ", a.sClientID" +
+                    "  a.sClientID" +
                     ", a.sBranchCd" +
                     ", a.sCPerson1" +
                     ", a.sCPPosit1" +
@@ -456,11 +489,17 @@ public class APClient implements XRecord{
                     ", c.sLastName xLastName" +
                     ", c.sFrstName xFirstNme" +
                     ", c.sMiddName xMiddName" +
-                    ", '' xAddressx" +
+                    ", c.sSuffixNm xSuffixNm" +
+                    ", TRIM(CONCAT(d.sHouseNox, ' ', sAddressx, ', ', IFNULL(e.sBrgyName, ''), ' ', IFNULL(f.sTownName, ''))) xAddressx" +
                     ", IFNULL(b.sDescript, '') xTermName" +
                 " FROM " + MASTER_TABLE + " a" +
-                        " LEFT JOIN Term b ON a.sTermCode = b.sTermCode" +
+                    " LEFT JOIN Term b ON a.sTermCode = b.sTermCode" +
                     ", Client_Master c" +
+                    " LEFT JOIN Client_Address d" +
+                        " LEFT JOIN Barangay e ON d.sBrgyIDxx = e.sBrgyIDxx" +
+                        " LEFT JOIN TownCity f ON d.sTownIDxx = f.sTownIDxx" +
+                    " ON c.sClientID = d.sClientID" +
+                        " AND d.nPriority = 1" +
                 " WHERE a.sClientID = c.sClientID";
     }
     

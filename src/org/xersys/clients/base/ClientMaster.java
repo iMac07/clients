@@ -13,6 +13,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.xersys.clients.search.ClientSearch;
 import org.xersys.commander.contants.EditMode;
 import org.xersys.commander.contants.RecordStatus;
 import org.xersys.commander.iface.XNautilus;
@@ -30,7 +31,6 @@ public class ClientMaster implements XRecord{
     private final boolean p_bWithParent;
     private final String p_sBranchCd;
     
-    
     private LRecordMas p_oListener;
     private boolean p_bSaveToDisk;
     private String p_sMessagex;
@@ -44,6 +44,7 @@ public class ClientMaster implements XRecord{
     
     private final ParamSearchF p_oCountry;
     private final ParamSearchF p_oTownCity;
+    private final ClientSearch p_oRecord;
     
     private ArrayList<Temp_Transactions> p_oTemp;
     
@@ -54,6 +55,7 @@ public class ClientMaster implements XRecord{
         
         p_oCountry = new ParamSearchF(p_oNautilus, ParamSearchF.SearchType.searchCountry);
         p_oTownCity = new ParamSearchF(p_oNautilus, ParamSearchF.SearchType.searchTownCity);
+        p_oRecord = new ClientSearch(foNautilus, ClientSearch.SearchType.searchClient);
         
         loadTempTransactions();
         
@@ -285,17 +287,85 @@ public class ClientMaster implements XRecord{
 
     @Override
     public boolean UpdateRecord() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+         System.out.println(this.getClass().getSimpleName() + ".UpdateTransaction()");
+        
+        if (p_nEditMode != EditMode.READY){
+            setMessage("No transaction to update.");
+            return false;
+        }
+        
+        p_nEditMode = EditMode.UPDATE;
+        
+        return true;
     }
 
     @Override
     public boolean OpenRecord(String fsTransNox) {
+        System.out.println(this.getClass().getSimpleName() + ".OpenTransaction()");
+        setMessage("");
+        
         if (p_oNautilus == null){
             p_sMessagex = "Application driver is not set.";
             return false;
         }
         
-        return true;
+        try {
+            if (p_oClient != null){
+                p_oClient.first();
+
+                if (p_oClient.getString("sClientID").equals(fsTransNox)){
+                    p_nEditMode  = EditMode.READY;
+                    return true;
+                }
+            }
+            
+            String lsSQL;
+            ResultSet loRS;
+            
+            RowSetFactory factory = RowSetProvider.newFactory();
+            
+            //open master record
+            lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sClientID = " + SQLUtil.toSQL(fsTransNox));
+            loRS = p_oNautilus.executeQuery(lsSQL);
+            p_oClient = factory.createCachedRowSet();
+            p_oClient.populate(loRS);
+            MiscUtil.close(loRS);
+            
+            lsSQL = MiscUtil.addCondition(getSQ_Mobile(), "sClientID = " + SQLUtil.toSQL(fsTransNox));
+            loRS = p_oNautilus.executeQuery(lsSQL);
+            p_oMobile = factory.createCachedRowSet();
+            p_oMobile.populate(loRS);
+            MiscUtil.close(loRS);
+            
+            lsSQL = MiscUtil.addCondition(getSQ_EMail(), "sClientID = " + SQLUtil.toSQL(fsTransNox));
+            loRS = p_oNautilus.executeQuery(lsSQL);
+            p_oMail = factory.createCachedRowSet();
+            p_oMail.populate(loRS);
+            MiscUtil.close(loRS);
+
+            lsSQL = MiscUtil.addCondition(getSQ_Address(), "a.sClientID = " + SQLUtil.toSQL(fsTransNox));
+            loRS = p_oNautilus.executeQuery(lsSQL);
+            p_oAddress = factory.createCachedRowSet();
+            p_oAddress.populate(loRS);
+            MiscUtil.close(loRS);
+            
+            if (p_oClient.size() == 1) {                            
+                p_nEditMode  = EditMode.READY;
+                return true;
+            }
+            
+            p_oClient = null;
+            p_oMobile = null;
+            p_oAddress = null;
+            p_oMail = null;
+            setMessage("No transction loaded.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            setMessage(ex.getMessage());
+        }
+        
+        p_nEditMode  = EditMode.UNKNOWN;
+        return false;
     }
 
     @Override
@@ -519,6 +589,18 @@ public class ClientMaster implements XRecord{
     
     public ParamSearchF getSearchTownCity(){
         return p_oTownCity;
+    }
+    
+    public JSONObject searchRecord(String fsKey, Object foValue, boolean fbExact){
+        p_oRecord.setKey(fsKey);
+        p_oRecord.setValue(foValue);
+        p_oRecord.setExact(fbExact);
+        
+        return p_oRecord.Search();
+    }
+    
+    public ClientSearch getSearchRecord(){
+        return p_oRecord;
     }
     
     private void getCountry(String foValue){
@@ -966,5 +1048,15 @@ public class ClientMaster implements XRecord{
             setMessage(e.getMessage());
             return false;
         }
+    }
+
+    @Override
+    public Object getMaster(int fnIndex) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void setMaster(int fnIndex, Object foValue) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
