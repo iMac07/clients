@@ -247,6 +247,10 @@ public class ClientMaster implements XRecord{
                 
                 lsSQL = MiscUtil.rowset2SQL(p_oClient, "Client_Master", "sCntryNme;sTownName");
             } else { //old record
+                p_oClient.updateObject("dModified", p_oNautilus.getServerDate());
+                p_oClient.updateRow();
+                
+                lsSQL = MiscUtil.rowset2SQL(p_oClient, "Client_Master", "sCntryNme;sTownName", "sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")));
             }
             
             if (lsSQL.equals("")){
@@ -287,10 +291,10 @@ public class ClientMaster implements XRecord{
 
     @Override
     public boolean UpdateRecord() {
-         System.out.println(this.getClass().getSimpleName() + ".UpdateTransaction()");
+         System.out.println(this.getClass().getSimpleName() + ".UpdateRecord()");
         
         if (p_nEditMode != EditMode.READY){
-            setMessage("No transaction to update.");
+            setMessage("No record to update.");
             return false;
         }
         
@@ -301,7 +305,7 @@ public class ClientMaster implements XRecord{
 
     @Override
     public boolean OpenRecord(String fsTransNox) {
-        System.out.println(this.getClass().getSimpleName() + ".OpenTransaction()");
+        System.out.println(this.getClass().getSimpleName() + ".OpenRecord(String fsTransNox)");
         setMessage("");
         
         if (p_oNautilus == null){
@@ -370,17 +374,17 @@ public class ClientMaster implements XRecord{
 
     @Override
     public boolean DeleteRecord(String fsTransNox) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return false;
     }
 
     @Override
     public boolean DeactivateRecord(String fsTransNox) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return false;
     }
 
     @Override
     public boolean ActivateRecord(String fsTransNox) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return false;
     }
     
     @Override

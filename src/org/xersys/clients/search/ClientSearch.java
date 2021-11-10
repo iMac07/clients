@@ -329,6 +329,9 @@ public class ClientSearch implements iSearch{
         //get the query for the particular search type
         if (null != _search_type)switch (_search_type) {
             case searchClient:
+                lsSQL = getSQ_Client();
+                break;
+            case searchCustomer:
                 lsSQL = MiscUtil.addCondition(getSQ_Client(), "cCustomer = '1'");
                 break;
             case searchSupplier:
@@ -339,6 +342,9 @@ public class ClientSearch implements iSearch{
                 break;
             case searchServiceAdvisor:
                 lsSQL = MiscUtil.addCondition(getSQ_Client(), "cSrvcAdvs = '1'");
+                break;
+            case searchAPClient:
+                lsSQL = getSQ_Client_AP();
                 break;
             default:
                 break;
@@ -396,6 +402,7 @@ public class ClientSearch implements iSearch{
         
         if (null != _search_type)switch (_search_type) {
             case searchClient:
+            case searchCustomer:
             case searchSupplier:
             case searchMechanic:
             case searchServiceAdvisor:
@@ -404,6 +411,16 @@ public class ClientSearch implements iSearch{
                 
                 _filter_list.add("a.sClientNm"); _filter_description.add("Name");
                 break;
+            case searchAPClient:
+                _fields.add("sClientID"); _fields_descript.add("ID");
+                _fields.add("sClientNm"); _fields_descript.add("Name");
+                _fields.add("sCPerson1"); _fields_descript.add("C. Person");
+                _fields.add("sCPPosit1"); _fields_descript.add("Position");
+                _fields.add("nCredLimt"); _fields_descript.add("Crdt Limit");
+                
+                _filter_list.add("a.sClientID"); _filter_description.add("ID");
+                _filter_list.add("a.sClientNm"); _filter_description.add("Name");
+                _filter_list.add("b.sCPerson1"); _filter_description.add("C. Person");
             default:
                 break;
         }
@@ -446,11 +463,25 @@ public class ClientSearch implements iSearch{
                 " FROM Client_Master a";
     }
     
+    private String getSQ_Client_AP(){
+        return "SELECT" +
+                    "  a.sClientID" +
+                    ", a.sClientNm" +
+                    ", b.sCPerson1" +
+                    ", b.sCPPosit1" +
+                    ", b.nCredLimt" +
+                " FROM Client_Master a" +
+                    ", AP_Master b" +
+                " WHERE a.sClientID = b.sClientID";
+    }
+    
     //let outside objects can call this variable without initializing the class.
     public static enum SearchType{
         searchClient,
+        searchCustomer,
         searchSupplier,
         searchMechanic,
-        searchServiceAdvisor
+        searchServiceAdvisor,
+        searchAPClient
     }
 }
