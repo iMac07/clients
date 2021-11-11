@@ -276,18 +276,18 @@ public class APClient implements XRecord{
                         p_oAPClient.updateRow();
                     }
                     
-                    p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
+                    if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
                     break;
                 case 11: //dBalForwd
                 case 15: //dCltSince
                     p_oAPClient.first();
                     
-                    if (StringUtil.isDate((String) foValue, SQLUtil.FORMAT_SHORT_DATE)){
+                    if (StringUtil.isDate(String.valueOf(foValue), SQLUtil.FORMAT_SHORT_DATE)){
                         p_oAPClient.updateObject(fnIndex, foValue);
                         p_oAPClient.updateRow();
                     }
                     
-                    p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
+                    if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
                     break;
                 case 1: //sClientID
                     getClient((String) foValue);
@@ -300,7 +300,7 @@ public class APClient implements XRecord{
                     p_oAPClient.updateObject(fnIndex, foValue);
                     p_oAPClient.updateRow();
 
-                    p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
+                    if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -372,8 +372,8 @@ public class APClient implements XRecord{
                     p_oAPClient.updateRow();
                 }
 
-                p_oListener.MasterRetreive("sTermCode", (String) p_oAPClient.getObject("sTermCode"));
-                p_oListener.MasterRetreive("xTermName", (String) p_oAPClient.getObject("xTermName"));
+                if (p_oListener != null) p_oListener.MasterRetreive("sTermCode", (String) p_oAPClient.getObject("sTermCode"));
+                if (p_oListener != null) p_oListener.MasterRetreive("xTermName", (String) p_oAPClient.getObject("xTermName"));
             } catch (SQLException ex) {
                 ex.printStackTrace();
                 setMessage("SQLException on " + lsProcName + ". Please inform your System Admin.");
@@ -436,12 +436,12 @@ public class APClient implements XRecord{
                     p_oAPClient.updateRow();
                 }
 
-                p_oListener.MasterRetreive("sClientID", (String) p_oAPClient.getObject("sClientID"));
-                p_oListener.MasterRetreive("xClientNm", (String) p_oAPClient.getObject("xClientNm"));
-                p_oListener.MasterRetreive("xLastName", (String) p_oAPClient.getObject("xLastName"));
-                p_oListener.MasterRetreive("xFrstName", (String) p_oAPClient.getObject("xFrstName"));
-                p_oListener.MasterRetreive("xMiddName", (String) p_oAPClient.getObject("xMiddName"));
-                p_oListener.MasterRetreive("xAddressx", (String) p_oAPClient.getObject("xAddressx"));
+                if (p_oListener != null) p_oListener.MasterRetreive("sClientID", (String) p_oAPClient.getObject("sClientID"));
+                if (p_oListener != null) p_oListener.MasterRetreive("xClientNm", (String) p_oAPClient.getObject("xClientNm"));
+                if (p_oListener != null) p_oListener.MasterRetreive("xLastName", (String) p_oAPClient.getObject("xLastName"));
+                if (p_oListener != null) p_oListener.MasterRetreive("xFrstName", (String) p_oAPClient.getObject("xFrstName"));
+                if (p_oListener != null) p_oListener.MasterRetreive("xMiddName", (String) p_oAPClient.getObject("xMiddName"));
+                if (p_oListener != null) p_oListener.MasterRetreive("xAddressx", (String) p_oAPClient.getObject("xAddressx"));
             } catch (SQLException ex) {
                 ex.printStackTrace();
                 setMessage("SQLException on " + lsProcName + ". Please inform your System Admin.");
