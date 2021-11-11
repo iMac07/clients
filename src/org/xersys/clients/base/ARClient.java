@@ -21,8 +21,8 @@ import org.xersys.commander.util.SQLUtil;
 import org.xersys.commander.util.StringUtil;
 import org.xersys.parameters.search.ParamSearchF;
 
-public class APClient implements XRecord{    
-    private final String MASTER_TABLE = "AP_Master";
+public class ARClient implements XRecord{    
+    private final String MASTER_TABLE = "AR_Master";
     
     private final XNautilus p_oNautilus;
     private final boolean p_bWithParent;
@@ -35,15 +35,15 @@ public class APClient implements XRecord{
     private String p_sMessagex;
     private int p_nEditMode;
     
-    private CachedRowSet p_oAPClient;
+    private CachedRowSet p_oARClient;
     
-    public APClient(XNautilus foNautilus, String fsBranchCd, boolean fbWithParent){
+    public ARClient(XNautilus foNautilus, String fsBranchCd, boolean fbWithParent){
         p_oNautilus = foNautilus;
         p_sBranchCd = fsBranchCd;
         p_bWithParent = fbWithParent;
         
         p_oTerm = new ParamSearchF(p_oNautilus, ParamSearchF.SearchType.searchTerm);
-        p_oClient = new ClientSearch(p_oNautilus, ClientSearch.SearchType.searchSupplier);
+        p_oClient = new ClientSearch(p_oNautilus, ClientSearch.SearchType.searchCustomer);
         
         p_nEditMode = EditMode.UNKNOWN;
     }
@@ -71,8 +71,8 @@ public class APClient implements XRecord{
             //create empty master record
             lsSQL = MiscUtil.addCondition(getSQ_Master(), "0=1");
             loRS = p_oNautilus.executeQuery(lsSQL);
-            p_oAPClient = factory.createCachedRowSet();
-            p_oAPClient.populate(loRS);
+            p_oARClient = factory.createCachedRowSet();
+            p_oARClient.populate(loRS);
             MiscUtil.close(loRS);
             initMaster();           
         } catch (SQLException ex) {
@@ -108,9 +108,9 @@ public class APClient implements XRecord{
                 
                 if (!p_bWithParent) MiscUtil.close(loConn);
                 
-                lsSQL = MiscUtil.rowset2SQL(p_oAPClient, MASTER_TABLE, "sClientNm;sLastName;sFrstName;sMiddName;sSuffixNm;xAddressx;xTermName");
+                lsSQL = MiscUtil.rowset2SQL(p_oARClient, MASTER_TABLE, "sClientNm;sLastName;sFrstName;sMiddName;sSuffixNm;xAddressx;xTermName");
             } else { //old record
-                lsSQL = MiscUtil.rowset2SQL(p_oAPClient, MASTER_TABLE, "sClientNm;sLastName;sFrstName;sMiddName;sSuffixNm;xAddressx;xTermName", "sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")));
+                lsSQL = MiscUtil.rowset2SQL(p_oARClient, MASTER_TABLE, "sClientNm;sLastName;sFrstName;sMiddName;sSuffixNm;xAddressx;xTermName", "sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")));
             }
             
             if (lsSQL.equals("")){
@@ -164,10 +164,10 @@ public class APClient implements XRecord{
         }
         
         try {
-            if (p_oAPClient != null){
-                p_oAPClient.first();
+            if (p_oARClient != null){
+                p_oARClient.first();
 
-                if (p_oAPClient.getString("sClientID").equals(fsClientID)){
+                if (p_oARClient.getString("sClientID").equals(fsClientID)){
                     p_nEditMode  = EditMode.READY;
                     return true;
                 }
@@ -183,11 +183,11 @@ public class APClient implements XRecord{
                         " a.sClientID = " + SQLUtil.toSQL(fsClientID) +
                             " AND a.sBranchCd = " + SQLUtil.toSQL(p_sBranchCd));
             loRS = p_oNautilus.executeQuery(lsSQL);
-            p_oAPClient = factory.createCachedRowSet();
-            p_oAPClient.populate(loRS);
+            p_oARClient = factory.createCachedRowSet();
+            p_oARClient.populate(loRS);
             MiscUtil.close(loRS);
             
-            if (p_oAPClient.size() == 1) {                            
+            if (p_oARClient.size() == 1) {                            
                 p_nEditMode  = EditMode.READY;
                 return true;
             }
@@ -196,15 +196,15 @@ public class APClient implements XRecord{
                 ClientMaster loClient = new ClientMaster(p_oNautilus, p_sBranchCd, true);
                 
                 if (loClient.OpenRecord(fsClientID)){
-                    p_oAPClient.first();
-                    p_oAPClient.updateObject(1, (String) loClient.getMaster("sClientID"));
-                    p_oAPClient.updateObject(18, (String) loClient.getMaster("sClientNm"));
-                    p_oAPClient.updateObject(19, (String) loClient.getMaster("sLastName"));
-                    p_oAPClient.updateObject(20, (String) loClient.getMaster("sFrstName"));
-                    p_oAPClient.updateObject(21, (String) loClient.getMaster("sMiddName"));
-                    p_oAPClient.updateObject(22, (String) loClient.getMaster("sSuffixNm"));
-                    p_oAPClient.updateObject(23, (String) loClient.getMaster("xAddressx"));
-                    p_oAPClient.updateRow();
+                    p_oARClient.first();
+                    p_oARClient.updateObject(1, (String) loClient.getMaster("sClientID"));
+                    p_oARClient.updateObject(21, (String) loClient.getMaster("sClientNm"));
+                    p_oARClient.updateObject(22, (String) loClient.getMaster("sLastName"));
+                    p_oARClient.updateObject(23, (String) loClient.getMaster("sFrstName"));
+                    p_oARClient.updateObject(24, (String) loClient.getMaster("sMiddName"));
+                    p_oARClient.updateObject(25, (String) loClient.getMaster("sSuffixNm"));
+                    p_oARClient.updateObject(26, (String) loClient.getMaster("xAddressx"));
+                    p_oARClient.updateRow();
                     return true;
                 }
             }
@@ -245,8 +245,8 @@ public class APClient implements XRecord{
     @Override
     public Object getMaster(int fnIndex) {
         try {
-            p_oAPClient.first();
-            return p_oAPClient.getObject(fnIndex);
+            p_oARClient.first();
+            return p_oARClient.getObject(fnIndex);
         } catch (SQLException e) {
             return null;
         }
@@ -264,43 +264,43 @@ public class APClient implements XRecord{
         
         try {
             switch (fnIndex){
-                case 9: //nDiscount
-                case 10: //nCredLimt
-                case 12: //nBalForwd
-                case 13: //nOBalance
-                case 14: //nABalance
-                    p_oAPClient.first();
+                case 10: //nDiscount
+                case 11: //nCredLimt
+                case 13: //nBalForwd
+                case 14: //nOBalance
+                case 15: //nABalance
+                    p_oARClient.first();
                     
                     if (StringUtil.isNumeric(String.valueOf(foValue))){
-                        p_oAPClient.updateObject(fnIndex, foValue);
-                        p_oAPClient.updateRow();
+                        p_oARClient.updateObject(fnIndex, foValue);
+                        p_oARClient.updateRow();
                     }
                     
-                    if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
+                    p_oListener.MasterRetreive(fnIndex, p_oARClient.getObject(fnIndex));
                     break;
-                case 11: //dBalForwd
-                case 15: //dCltSince
-                    p_oAPClient.first();
+                case 12: //dBalForwd
+                case 16: //dCltSince
+                    p_oARClient.first();
                     
-                    if (StringUtil.isDate(String.valueOf(foValue), SQLUtil.FORMAT_SHORT_DATE)){
-                        p_oAPClient.updateObject(fnIndex, foValue);
-                        p_oAPClient.updateRow();
+                    if (StringUtil.isDate((String) foValue, SQLUtil.FORMAT_SHORT_DATE)){
+                        p_oARClient.updateObject(fnIndex, foValue);
+                        p_oARClient.updateRow();
                     }
                     
-                    if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
+                    p_oListener.MasterRetreive(fnIndex, p_oARClient.getObject(fnIndex));
                     break;
                 case 1: //sClientID
                     getClient((String) foValue);
                     break;
-                case 8: //sTermCode
+                case 9: //sTermCode
                     getTerm((String) foValue);
                     break;
                 default:
-                    p_oAPClient.first();
-                    p_oAPClient.updateObject(fnIndex, foValue);
-                    p_oAPClient.updateRow();
+                    p_oARClient.first();
+                    p_oARClient.updateObject(fnIndex, foValue);
+                    p_oARClient.updateRow();
 
-                    if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oAPClient.getObject(fnIndex));
+                    p_oListener.MasterRetreive(fnIndex, p_oARClient.getObject(fnIndex));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -313,7 +313,7 @@ public class APClient implements XRecord{
         String lsProcName = this.getClass().getSimpleName() + ".setMaster(String fsIndex, Object foValue)";
         
         try {
-            setMaster(MiscUtil.getColumnIndex(p_oAPClient, fsIndex), foValue);
+            setMaster(MiscUtil.getColumnIndex(p_oARClient, fsIndex), foValue);
         } catch (SQLException e) {
             e.printStackTrace();
             setMessage("SQLException on " + lsProcName + ". Please inform your System Admin.");
@@ -323,7 +323,7 @@ public class APClient implements XRecord{
     @Override
     public Object getMaster(String fsFieldNm){
         try {
-            return getMaster(MiscUtil.getColumnIndex(p_oAPClient, fsFieldNm));
+            return getMaster(MiscUtil.getColumnIndex(p_oARClient, fsFieldNm));
         } catch (SQLException e) {
             return null;
         }
@@ -349,31 +349,31 @@ public class APClient implements XRecord{
             try {
                 JSONParser loParser = new JSONParser();
 
-                p_oAPClient.first();
+                p_oARClient.first();
                 try {
                     JSONArray loArray = (JSONArray) loParser.parse((String) loJSON.get("payload"));
 
                     switch (loArray.size()){
                         case 0:
-                            p_oAPClient.updateObject("sTermCode", "");
-                            p_oAPClient.updateObject("xTermName", "");
-                            p_oAPClient.updateRow();
+                            p_oARClient.updateObject("sTermCode", "");
+                            p_oARClient.updateObject("xTermName", "");
+                            p_oARClient.updateRow();
                             break;
                         default:
                             loJSON = (JSONObject) loArray.get(0);
-                            p_oAPClient.updateObject("sTermCode", (String) loJSON.get("sTermCode"));
-                            p_oAPClient.updateObject("xTermName", (String) loJSON.get("sDescript"));
-                            p_oAPClient.updateRow();
+                            p_oARClient.updateObject("sTermCode", (String) loJSON.get("sTermCode"));
+                            p_oARClient.updateObject("xTermName", (String) loJSON.get("sDescript"));
+                            p_oARClient.updateRow();
                     }
                 } catch (ParseException ex) {
                     ex.printStackTrace();
-                    p_oAPClient.updateObject("sTermCode", "");
-                    p_oAPClient.updateObject("xTermName", "");
-                    p_oAPClient.updateRow();
+                    p_oARClient.updateObject("sTermCode", "");
+                    p_oARClient.updateObject("xTermName", "");
+                    p_oARClient.updateRow();
                 }
 
-                if (p_oListener != null) p_oListener.MasterRetreive("sTermCode", (String) p_oAPClient.getObject("sTermCode"));
-                if (p_oListener != null) p_oListener.MasterRetreive("xTermName", (String) p_oAPClient.getObject("xTermName"));
+                p_oListener.MasterRetreive("sTermCode", (String) p_oARClient.getObject("sTermCode"));
+                p_oListener.MasterRetreive("xTermName", (String) p_oARClient.getObject("xTermName"));
             } catch (SQLException ex) {
                 ex.printStackTrace();
                 setMessage("SQLException on " + lsProcName + ". Please inform your System Admin.");
@@ -401,47 +401,47 @@ public class APClient implements XRecord{
             try {
                 JSONParser loParser = new JSONParser();
 
-                p_oAPClient.first();
+                p_oARClient.first();
                 try {
                     JSONArray loArray = (JSONArray) loParser.parse((String) loJSON.get("payload"));
 
                     switch (loArray.size()){
                         case 0:
-                            p_oAPClient.updateObject("sClientID", "");
-                            p_oAPClient.updateObject("xClientNm", "");
-                            p_oAPClient.updateObject("xLastName", "");
-                            p_oAPClient.updateObject("xFrstName", "");
-                            p_oAPClient.updateObject("xMiddName", "");
-                            p_oAPClient.updateObject("xAddressx", "");
-                            p_oAPClient.updateRow();
+                            p_oARClient.updateObject("sClientID", "");
+                            p_oARClient.updateObject("xClientNm", "");
+                            p_oARClient.updateObject("xLastName", "");
+                            p_oARClient.updateObject("xFrstName", "");
+                            p_oARClient.updateObject("xMiddName", "");
+                            p_oARClient.updateObject("xAddressx", "");
+                            p_oARClient.updateRow();
                             break;
                         default:
                             loJSON = (JSONObject) loArray.get(0);
-                            p_oAPClient.updateObject("sClientID", (String) loJSON.get("sClientID"));
-                            p_oAPClient.updateObject("xClientNm", (String) loJSON.get("sClientNm"));
-                            p_oAPClient.updateObject("xLastName", (String) loJSON.get("sLastName"));
-                            p_oAPClient.updateObject("xFrstName", (String) loJSON.get("sFrstName"));
-                            p_oAPClient.updateObject("xMiddName", (String) loJSON.get("sMiddName"));
-                            p_oAPClient.updateObject("xAddressx", "");
-                            p_oAPClient.updateRow();
+                            p_oARClient.updateObject("sClientID", (String) loJSON.get("sClientID"));
+                            p_oARClient.updateObject("xClientNm", (String) loJSON.get("sClientNm"));
+                            p_oARClient.updateObject("xLastName", (String) loJSON.get("sLastName"));
+                            p_oARClient.updateObject("xFrstName", (String) loJSON.get("sFrstName"));
+                            p_oARClient.updateObject("xMiddName", (String) loJSON.get("sMiddName"));
+                            p_oARClient.updateObject("xAddressx", "");
+                            p_oARClient.updateRow();
                     }
                 } catch (ParseException ex) {
                     ex.printStackTrace();
-                    p_oAPClient.updateObject("sClientID", "");
-                    p_oAPClient.updateObject("xClientNm", "");
-                    p_oAPClient.updateObject("xLastName", "");
-                    p_oAPClient.updateObject("xFrstName", "");
-                    p_oAPClient.updateObject("xMiddName", "");
-                    p_oAPClient.updateObject("xAddressx", "");
-                    p_oAPClient.updateRow();
+                    p_oARClient.updateObject("sClientID", "");
+                    p_oARClient.updateObject("xClientNm", "");
+                    p_oARClient.updateObject("xLastName", "");
+                    p_oARClient.updateObject("xFrstName", "");
+                    p_oARClient.updateObject("xMiddName", "");
+                    p_oARClient.updateObject("xAddressx", "");
+                    p_oARClient.updateRow();
                 }
 
-                if (p_oListener != null) p_oListener.MasterRetreive("sClientID", (String) p_oAPClient.getObject("sClientID"));
-                if (p_oListener != null) p_oListener.MasterRetreive("xClientNm", (String) p_oAPClient.getObject("xClientNm"));
-                if (p_oListener != null) p_oListener.MasterRetreive("xLastName", (String) p_oAPClient.getObject("xLastName"));
-                if (p_oListener != null) p_oListener.MasterRetreive("xFrstName", (String) p_oAPClient.getObject("xFrstName"));
-                if (p_oListener != null) p_oListener.MasterRetreive("xMiddName", (String) p_oAPClient.getObject("xMiddName"));
-                if (p_oListener != null) p_oListener.MasterRetreive("xAddressx", (String) p_oAPClient.getObject("xAddressx"));
+                p_oListener.MasterRetreive("sClientID", (String) p_oARClient.getObject("sClientID"));
+                p_oListener.MasterRetreive("xClientNm", (String) p_oARClient.getObject("xClientNm"));
+                p_oListener.MasterRetreive("xLastName", (String) p_oARClient.getObject("xLastName"));
+                p_oListener.MasterRetreive("xFrstName", (String) p_oARClient.getObject("xFrstName"));
+                p_oListener.MasterRetreive("xMiddName", (String) p_oARClient.getObject("xMiddName"));
+                p_oListener.MasterRetreive("xAddressx", (String) p_oARClient.getObject("xAddressx"));
             } catch (SQLException ex) {
                 ex.printStackTrace();
                 setMessage("SQLException on " + lsProcName + ". Please inform your System Admin.");
@@ -470,6 +470,7 @@ public class APClient implements XRecord{
         return "SELECT" +
                     "  a.sClientID" +
                     ", a.sBranchCd" +
+                    ", a.sNmeOnChk" +
                     ", a.sCPerson1" +
                     ", a.sCPPosit1" +
                     ", a.sTelNoxxx" +
@@ -483,6 +484,8 @@ public class APClient implements XRecord{
                     ", a.nOBalance" +
                     ", a.nABalance" +
                     ", a.dCltSince" +
+                    ", a.cAutoHold" +
+                    ", a.cHoldAcct" +
                     ", a.cRecdStat" +
                     ", a.dModified" +
                     ", c.sClientNm xCompnyNm" +
@@ -504,29 +507,29 @@ public class APClient implements XRecord{
     }
     
     private void initMaster() throws SQLException{
-        p_oAPClient.last();
-        p_oAPClient.moveToInsertRow();
+        p_oARClient.last();
+        p_oARClient.moveToInsertRow();
         
-        MiscUtil.initRowSet(p_oAPClient);
-        p_oAPClient.updateObject("cRecdStat", RecordStatus.ACTIVE);
+        MiscUtil.initRowSet(p_oARClient);
+        p_oARClient.updateObject("cRecdStat", RecordStatus.ACTIVE);
         
-        p_oAPClient.insertRow();
-        p_oAPClient.moveToCurrentRow();
+        p_oARClient.insertRow();
+        p_oARClient.moveToCurrentRow();
     }
     
     private boolean isEntryOK(){
         try {
             //assign values to master record
-            p_oAPClient.first();
+            p_oARClient.first();
             
             if (String.valueOf(getMaster("sClientID")).isEmpty()){
                 setMessage("Supplier must not be empty.");
                 return false;
             }
             
-            p_oAPClient.updateObject("sBranchCd", (String) p_oNautilus.getBranchConfig("sBranchCd"));
-            p_oAPClient.updateObject("dModified", p_oNautilus.getServerDate());
-            p_oAPClient.updateRow();
+            p_oARClient.updateObject("sBranchCd", (String) p_oNautilus.getBranchConfig("sBranchCd"));
+            p_oARClient.updateObject("dModified", p_oNautilus.getServerDate());
+            p_oARClient.updateRow();
 
             return true;
         } catch (SQLException e) {
