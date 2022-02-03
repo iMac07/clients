@@ -332,7 +332,7 @@ public class ClientSearch implements iSearch{
                 lsSQL = getSQ_Client();
                 break;
             case searchCustomer:
-                lsSQL = MiscUtil.addCondition(getSQ_Client(), "cCustomer = '1'");
+                lsSQL = getSQ_Client();
                 break;
             case searchSupplier:
                 lsSQL = MiscUtil.addCondition(getSQ_Client(), "cSupplier = '1'");
