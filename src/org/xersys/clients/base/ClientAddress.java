@@ -91,7 +91,8 @@ public class ClientAddress {
             
             p_nEditMode = EditMode.ADDNEW;
         } else {
-            loRS = p_oNautilus.executeQuery(MiscUtil.addCondition(getSQ_Master(), "sClientID = " + SQLUtil.toSQL(fsClientID)));
+            lsSQL = MiscUtil.addCondition(getSQ_Master(), "sClientID = " + SQLUtil.toSQL(fsClientID));
+            loRS = p_oNautilus.executeQuery(lsSQL);
             
             p_oAddress = factory.createCachedRowSet();
             p_oAddress.populate(loRS);

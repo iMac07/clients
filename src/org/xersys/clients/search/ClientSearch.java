@@ -332,7 +332,7 @@ public class ClientSearch implements iSearch{
                 lsSQL = getSQ_Client();
                 break;
             case searchCustomer:
-                lsSQL = MiscUtil.addCondition(getSQ_Client(), "cCustomer = '1'");
+                lsSQL = getSQ_Client();
                 break;
             case searchSupplier:
                 lsSQL = MiscUtil.addCondition(getSQ_Client(), "cSupplier = '1'");
@@ -408,7 +408,12 @@ public class ClientSearch implements iSearch{
             case searchServiceAdvisor:
                 _fields.add("sClientID"); _fields_descript.add("ID");
                 _fields.add("sClientNm"); _fields_descript.add("Name");
+                _fields.add("cCustomer"); _fields_descript.add("Is Customer");
+                _fields.add("cSupplier"); _fields_descript.add("Is Supplier");
+                _fields.add("cMechanic"); _fields_descript.add("Is Mechanic");
+                _fields.add("cSrvcAdvs"); _fields_descript.add("Is Advisor");
                 
+                _filter_list.add("a.sClientID"); _filter_description.add("ID");
                 _filter_list.add("a.sClientNm"); _filter_description.add("Name");
                 break;
             case searchAPClient:
@@ -455,10 +460,10 @@ public class ClientSearch implements iSearch{
                     ", a.sBirthPlc" +
                     ", a.sAddlInfo" +
                     ", a.sSpouseID" +
-                    ", a.cCustomer" +
-                    ", a.cSupplier" +
-                    ", a.cMechanic" +
-                    ", a.cSrvcAdvs" +
+                    ", IF(a.cCustomer = '1', 'YES', 'NO') cCustomer" +
+                    ", IF(a.cSupplier = '1', 'YES', 'NO') cSupplier" +
+                    ", IF(a.cMechanic = '1', 'YES', 'NO') cMechanic" +
+                    ", IF(a.cSrvcAdvs = '1', 'YES', 'NO') cSrvcAdvs" +
                     ", a.cRecdStat" +
                 " FROM Client_Master a";
     }

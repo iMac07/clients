@@ -228,7 +228,9 @@ public class ClientMaster implements XRecord{
                 //save address
                 p_oAddress.beforeFirst();
                 while (p_oAddress.next()){
-                    if (!"".equals((String) p_oAddress.getObject("sAddressx"))){
+                    if (!"".equals((String) p_oAddress.getObject("sAddressx")) ||
+                        !"".equals((String) p_oAddress.getObject("sBrgyIDxx")) ||
+                        !"".equals((String) p_oAddress.getObject("sTownIDxx"))){
                         p_oAddress.updateObject("sClientID", p_oClient.getObject("sClientID"));
                     
                         lsSQL = MiscUtil.rowset2SQL(p_oAddress, "Client_Address", "xBrgyName;xTownName;xProvName");
@@ -267,7 +269,7 @@ public class ClientMaster implements XRecord{
                     setMessage("No record updated");
             } 
             
-            saveToDisk(RecordStatus.INACTIVE);
+            RemoveTempTranssaction();
 
             if (!p_bWithParent) {
                 if(!p_oNautilus.getMessage().isEmpty())
@@ -341,17 +343,23 @@ public class ClientMaster implements XRecord{
             p_oMobile.populate(loRS);
             MiscUtil.close(loRS);
             
+            if (p_oMobile.size() == 0) addMobileRow();
+            
             lsSQL = MiscUtil.addCondition(getSQ_EMail(), "sClientID = " + SQLUtil.toSQL(fsTransNox));
             loRS = p_oNautilus.executeQuery(lsSQL);
             p_oMail = factory.createCachedRowSet();
             p_oMail.populate(loRS);
             MiscUtil.close(loRS);
+            
+            if (p_oMail.size() == 0) addEMailRow();
 
             lsSQL = MiscUtil.addCondition(getSQ_Address(), "a.sClientID = " + SQLUtil.toSQL(fsTransNox));
             loRS = p_oNautilus.executeQuery(lsSQL);
             p_oAddress = factory.createCachedRowSet();
             p_oAddress.populate(loRS);
             MiscUtil.close(loRS);
+            
+            if (p_oAddress.size() == 0) addAddressRow();
             
             if (p_oClient.size() == 1) {                            
                 p_nEditMode  = EditMode.READY;
@@ -402,18 +410,17 @@ public class ClientMaster implements XRecord{
     }
 
     @Override
-    public void setMaster(String fsFieldNm, Object foValue){
+    public void setMaster(int fnIndex, Object foValue) {
         String lsProcName = this.getClass().getSimpleName() + ".setMaster()";
         
         if (p_nEditMode != EditMode.ADDNEW &&
             p_nEditMode != EditMode.UPDATE){
-            System.err.println("Transaction is not on update mode.");
             return;
         }
         
         try {
-            switch (fsFieldNm){
-                case "xAddressx":
+            switch (fnIndex){
+                case 102: //xAddressx
                     p_oAddress = (CachedRowSet) foValue;
                     
                     p_oAddress.first();
@@ -431,21 +438,21 @@ public class ClientMaster implements XRecord{
 
                     p_oListener.MasterRetreive("xAddressx", lsAddress);
                     break;
-                case "xMobileNo":
+                case 101: //xMobileNo
                     p_oMobile = (CachedRowSet) foValue;
 
                     p_oMobile.first();
                     p_oListener.MasterRetreive("xMobileNo", (String) p_oMobile.getObject("sMobileNo"));
                     break;
-                case "xEmailAdd":
+                case 103: //xEmailAdd
                     p_oMail = (CachedRowSet) foValue;
 
                     p_oMail.first();
                     p_oListener.MasterRetreive("xEmailAdd", (String) p_oMail.getObject("sEmailAdd"));
                     break;
-                case "cClientTp":
+                case 2: //cClientTp
                     p_oClient.first();
-                    p_oClient.updateObject(fsFieldNm, foValue);
+                    p_oClient.updateObject(fnIndex, foValue);
 
                     if (((String) foValue).equals("0")){
                         p_oClient.updateObject("sClientNm", 
@@ -458,15 +465,15 @@ public class ClientMaster implements XRecord{
 
                     p_oClient.updateRow();
 
-                    p_oListener.MasterRetreive(fsFieldNm, p_oClient.getObject(fsFieldNm));
+                    p_oListener.MasterRetreive(fnIndex, p_oClient.getObject(fnIndex));
                     p_oListener.MasterRetreive("sClientNm", p_oClient.getObject("sClientNm"));
                     break;
-                case "sLastName":
-                case "sFrstName":
-                case "sMiddName":
-                case "sSuffixNm":
+                case 3: //sLastName
+                case 4: //sFrstName
+                case 5: //sMiddName
+                case 6: //sSuffixNm
                     p_oClient.first();
-                    p_oClient.updateObject(fsFieldNm, foValue);
+                    p_oClient.updateObject(fnIndex, foValue);
 
                     if (p_oClient.getString("cClientTp").equals("0")){
                         p_oClient.updateObject("sClientNm", 
@@ -479,21 +486,21 @@ public class ClientMaster implements XRecord{
 
                     p_oClient.updateRow();
 
-                    p_oListener.MasterRetreive(fsFieldNm, p_oClient.getObject(fsFieldNm));
+                    p_oListener.MasterRetreive(fnIndex, p_oClient.getObject(fnIndex));
                     p_oListener.MasterRetreive("sClientNm", p_oClient.getObject("sClientNm"));
                     break;
-                case "sCitizenx":
+                case 10: //sCitizenx
                     getCountry((String) foValue);
                     break;
-                case "sBirthPlc":
+                case 12: //sBirthPlc
                     getBirthPlace((String) foValue);
                     break;
                 default:
                     p_oClient.first();
-                    p_oClient.updateObject(fsFieldNm, foValue);
+                    p_oClient.updateObject(fnIndex, foValue);
                     p_oClient.updateRow();
 
-                    p_oListener.MasterRetreive(fsFieldNm, p_oClient.getObject(fsFieldNm));
+                    p_oListener.MasterRetreive(fnIndex, p_oClient.getObject(fnIndex));
             }
 
             saveToDisk(RecordStatus.ACTIVE);
@@ -502,16 +509,37 @@ public class ClientMaster implements XRecord{
             setMessage("SQLException on " + lsProcName + ". Please inform your System Admin.");
         }
     }
-
+    
     @Override
-    public Object getMaster(String fsFieldNm){
+    public void setMaster(String fsFieldNm, Object foValue){
         try {
-            p_oClient.first();
             switch (fsFieldNm){
                 case "xMobileNo":
+                    setMaster(101, foValue);
+                    break;
+                case "xAddressx":
+                    setMaster(102, foValue);
+                    break;
+                case "xEmailAdd":
+                    setMaster(103, foValue);
+                    break;
+                default:
+                    setMaster(MiscUtil.getColumnIndex(p_oClient, fsFieldNm), foValue);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }        
+    }
+    
+    @Override
+    public Object getMaster(int fnIndex) {
+        try {
+            p_oClient.first();
+            switch (fnIndex){
+                case 101: //xMobileNo
                     p_oMobile.first();
                     return (String) p_oMobile.getObject("sMobileNo");
-                case "xAddressx":
+                case 102: //xAddressx
                     p_oAddress.first();
                     String lsAddress = (String) p_oAddress.getObject("sHouseNox") + " " + 
                                         (String) p_oAddress.getObject("sAddressx");
@@ -526,15 +554,34 @@ public class ClientMaster implements XRecord{
                     }
                     
                     return lsAddress.trim();
-                case "xEmailAdd":
+                case 103: //xEmailAdd
                     p_oMail.first();
                     return (String) p_oMail.getObject("sEmailAdd");
                 default:
-                    return p_oClient.getObject(fsFieldNm);
+                    return p_oClient.getObject(fnIndex);
             }
         } catch (SQLException e) {
             return null;
         }
+    }
+
+    @Override
+    public Object getMaster(String fsFieldNm){
+        try {
+            switch (fsFieldNm){
+                case "xMobileNo":
+                    return getMaster(101);
+                case "xAddressx":
+                    return getMaster(102);
+                case "xEmailAdd":
+                    return getMaster(103);
+                default:
+                    return getMaster(MiscUtil.getColumnIndex(p_oClient, fsFieldNm));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }     
     }
     
     public CachedRowSet getMobile(){
@@ -902,6 +949,10 @@ public class ClientMaster implements XRecord{
         return p_oTemp;
     }
     
+    public void RemoveTempTranssaction(){
+        saveToDisk(RecordStatus.UNKNOWN);
+    }
+    
     private String getSQ_Master(){
         return "SELECT" +
                     "  a.sClientID" +
@@ -988,6 +1039,8 @@ public class ClientMaster implements XRecord{
         p_oClient.updateObject("dBirthDte", p_oNautilus.getServerDate());
         p_oClient.updateObject("cCustomer", "0");
         p_oClient.updateObject("cSupplier", "0");
+        p_oClient.updateObject("cMechanic", "0");
+        p_oClient.updateObject("cSrvcAdvs", "0");
         p_oClient.updateObject("cRecdStat", RecordStatus.ACTIVE);
         
         p_oClient.insertRow();
@@ -1052,15 +1105,5 @@ public class ClientMaster implements XRecord{
             setMessage(e.getMessage());
             return false;
         }
-    }
-
-    @Override
-    public Object getMaster(int fnIndex) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public void setMaster(int fnIndex, Object foValue) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
