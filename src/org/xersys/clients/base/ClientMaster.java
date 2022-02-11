@@ -228,7 +228,9 @@ public class ClientMaster implements XRecord{
                 //save address
                 p_oAddress.beforeFirst();
                 while (p_oAddress.next()){
-                    if (!"".equals((String) p_oAddress.getObject("sAddressx"))){
+                    if (!"".equals((String) p_oAddress.getObject("sAddressx")) ||
+                        !"".equals((String) p_oAddress.getObject("sBrgyIDxx")) ||
+                        !"".equals((String) p_oAddress.getObject("sTownIDxx"))){
                         p_oAddress.updateObject("sClientID", p_oClient.getObject("sClientID"));
                     
                         lsSQL = MiscUtil.rowset2SQL(p_oAddress, "Client_Address", "xBrgyName;xTownName;xProvName");

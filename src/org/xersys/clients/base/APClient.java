@@ -36,6 +36,7 @@ public class APClient implements XRecord{
     private int p_nEditMode;
     
     private CachedRowSet p_oAPClient;
+    private CachedRowSet p_oAPLedger;
     
     public APClient(XNautilus foNautilus, String fsBranchCd, boolean fbWithParent){
         p_oNautilus = foNautilus;
@@ -187,7 +188,13 @@ public class APClient implements XRecord{
             p_oAPClient.populate(loRS);
             MiscUtil.close(loRS);
             
-            if (p_oAPClient.size() == 1) {                            
+            if (p_oAPClient.size() == 1) {          
+                lsSQL = getSQ_Detail();
+                loRS = p_oNautilus.executeQuery(lsSQL);
+                p_oAPLedger = factory.createCachedRowSet();
+                p_oAPLedger.populate(loRS);
+                MiscUtil.close(loRS);
+                
                 p_nEditMode  = EditMode.READY;
                 return true;
             }
@@ -325,6 +332,43 @@ public class APClient implements XRecord{
         try {
             return getMaster(MiscUtil.getColumnIndex(p_oAPClient, fsFieldNm));
         } catch (SQLException e) {
+            return null;
+        }
+    }
+    
+    public int getItemCount() {
+        try {
+            p_oAPLedger.last();
+            return p_oAPLedger.getRow();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            setMessage(e.getMessage());
+            return -1;
+        }
+    }
+    
+    public Object getDetail(int fnRow, int fnIndex) {        
+        try {
+            if (getItemCount() <= 0 || fnRow + 1 <= 0){
+                setMessage("Invalid row index!");
+                return null;
+            }
+            
+            p_oAPLedger.absolute(fnRow + 1);            
+            return p_oAPLedger.getObject(fnIndex);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            setMessage("SQL Exception!");
+            return null;
+        }
+    }
+    
+    public Object getDetail(int fnRow, String fsFieldNm) {
+        try {
+            return getDetail(fnRow, MiscUtil.getColumnIndex(p_oAPLedger, fsFieldNm));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            setMessage("SQL Exception!");
             return null;
         }
     }
@@ -501,6 +545,49 @@ public class APClient implements XRecord{
                     " ON c.sClientID = d.sClientID" +
                         " AND d.nPriority = 1" +
                 " WHERE a.sClientID = c.sClientID";
+    }
+    
+    private String getSQ_Detail(){
+        return "SELECT" + 
+                    "  CONCAT(b.sInvTypCd, ' Purchase') xDescript" +
+                    ", b.sReferNox" +
+                    ", DATE_FORMAT(b.dTransact, '%Y-%m-%d') dTransact" +
+                    ", DATE_ADD(DATE_FORMAT(b.dTransact, '%Y-%m-%d'), INTERVAL IFNULL(c.nTermValx, 0) DAY) dDueDatex" +
+                    ", a.nCreditxx nDebitxxx" +
+                    ", a.nDebitxxx - b.nAmtPaidx nCreditxx" +
+                    ", a.nDebitxxx nAppliedx" +
+                    ", a.sSourceNo sTransNox" +
+                    ", a.sSourceCd" +
+                    ", a.sClientID" +
+                    ", a.cReversex" +
+                " FROM AP_Ledger a" +
+                    ", PO_Receiving_Master b" +
+                        " LEFT JOIN Term c ON b.sTermCode = c.sTermCode" +
+                " WHERE a.sSourceNo = b.sTransNox" + 
+                    " AND a.sSourceCd = 'DA'" +
+                    " AND a.sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")) +
+                    " AND a.sBranchCd = " + SQLUtil.toSQL((String) getMaster("sBranchCd")) +
+                    " AND b.cTranStat <> '3'" +
+                " UNION SELECT" + 
+                    "  CONCAT(b.sInvTypCd, ' Purchase Return') xDescript" +
+                    ", b.sTransNox sReferNox" +
+                    ", DATE_FORMAT(b.dTransact, '%Y-%m-%d') dTransact" +
+                    ", DATE_FORMAT(b.dTransact, '%Y-%m-%d') dDueDatex" +
+                    ", a.nCreditxx nDebitxxx" +
+                    ", a.nDebitxxx - b.nAmtPaidx nCreditxx" +
+                    ", a.nDebitxxx nAppliedx" +
+                    ", a.sSourceNo sTransNox" +
+                    ", a.sSourceCd" +
+                    ", a.sClientID" +
+                    ", a.cReversex" +
+                " FROM AP_Ledger a" +
+                    ", PO_Return_Master b" +
+                " WHERE a.sSourceNo = b.sTransNox" +
+                    " AND a.sSourceCd = 'PR'" +
+                    " AND a.sClientID = " + SQLUtil.toSQL((String) getMaster("sClientID")) +
+                    " AND a.sBranchCd = " + SQLUtil.toSQL((String) getMaster("sBranchCd")) +
+                    " AND b.cTranStat <> '3'" +
+                " ORDER BY dTransact";
     }
     
     private void initMaster() throws SQLException{
