@@ -425,6 +425,7 @@ public class ClientSearch implements iSearch{
                 
                 _filter_list.add("a.sClientID"); _filter_description.add("ID");
                 _filter_list.add("a.sClientNm"); _filter_description.add("Name");
+                _filter_list.add("b.sBranchCd"); _filter_description.add("Branch");
                 _filter_list.add("b.sCPerson1"); _filter_description.add("C. Person");
             default:
                 break;
@@ -471,13 +472,22 @@ public class ClientSearch implements iSearch{
     private String getSQ_Client_AP(){
         return "SELECT" +
                     "  a.sClientID" +
+                    ", a.cClientTp" +
+                    ", a.sLastName" +
+                    ", a.sFrstName" +
+                    ", a.sMiddName" +
+                    ", a.sSuffixNm" +
                     ", a.sClientNm" +
+                    ", a.cRecdStat" +
                     ", b.sCPerson1" +
                     ", b.sCPPosit1" +
                     ", b.nCredLimt" +
+                    ", b.nOBalance" +
+                    ", b.nABalance" +
                 " FROM Client_Master a" +
                     ", AP_Master b" +
-                " WHERE a.sClientID = b.sClientID";
+                " WHERE a.sClientID = b.sClientID" +
+                    " AND a.cSupplier = '1'";
     }
     
     //let outside objects can call this variable without initializing the class.
