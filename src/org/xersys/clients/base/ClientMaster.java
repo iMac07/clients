@@ -973,6 +973,7 @@ public class ClientMaster implements XRecord{
                     ", a.cSupplier" +
                     ", a.cMechanic" +
                     ", a.cSrvcAdvs" +
+                    ", a.cEmployee" +
                     ", a.cRecdStat" +
                     ", a.dModified" +
                     ", b.sCntryNme" +
@@ -1041,6 +1042,7 @@ public class ClientMaster implements XRecord{
         p_oClient.updateObject("cSupplier", "0");
         p_oClient.updateObject("cMechanic", "0");
         p_oClient.updateObject("cSrvcAdvs", "0");
+        p_oClient.updateObject("cEmployee", "0");
         p_oClient.updateObject("cRecdStat", RecordStatus.ACTIVE);
         
         p_oClient.insertRow();
