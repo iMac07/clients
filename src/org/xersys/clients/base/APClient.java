@@ -165,12 +165,14 @@ public class APClient implements XRecord{
         }
         
         try {
-            if (p_oAPClient != null){
-                p_oAPClient.first();
+            if (p_nEditMode != EditMode.UNKNOWN){
+                if (p_oAPClient != null){
+                    p_oAPClient.first();
 
-                if (p_oAPClient.getString("sClientID").equals(fsClientID)){
-                    p_nEditMode  = EditMode.READY;
-                    return true;
+                    if (p_oAPClient.getString("sClientID").equals(fsClientID)){
+                        p_nEditMode  = EditMode.READY;
+                        return true;
+                    }
                 }
             }
             

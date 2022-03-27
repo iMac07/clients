@@ -9,7 +9,7 @@ import org.xersys.commander.util.MiscUtil;
 import org.xersys.commander.util.SQLUtil;
 
 public class ClientSearch implements iSearch{
-    private final int DEFAULT_MAX_RESULT = 25;
+    private final int DEFAULT_MAX_RESULT = 1000;
     
     private XNautilus _app = null;  
     private String _message = "";
@@ -335,7 +335,7 @@ public class ClientSearch implements iSearch{
                 lsSQL = getSQ_Client();
                 break;
             case searchSupplier:
-                lsSQL = MiscUtil.addCondition(getSQ_Client(), "cSupplier = '1'");
+                lsSQL = getSQ_Client_AP();
                 break;
             case searchMechanic:
                 lsSQL = MiscUtil.addCondition(getSQ_Client(), "cMechanic = '1'");
@@ -343,8 +343,14 @@ public class ClientSearch implements iSearch{
             case searchServiceAdvisor:
                 lsSQL = MiscUtil.addCondition(getSQ_Client(), "cSrvcAdvs = '1'");
                 break;
+            case searchEmployee:
+                lsSQL = MiscUtil.addCondition(getSQ_Client(), "cEmployee = '1'");
+                break;
             case searchAPClient:
                 lsSQL = getSQ_Client_AP();
+                break;
+            case searchARClient:
+                lsSQL = getSQ_Client_AR();
                 break;
             default:
                 break;
@@ -360,7 +366,9 @@ public class ClientSearch implements iSearch{
         if (_search_exact)
             lsSQL = MiscUtil.addCondition(lsSQL, _search_key + " = " + SQLUtil.toSQL(_search_value));
         else
-            lsSQL = MiscUtil.addCondition(lsSQL, _search_key + " LIKE " + SQLUtil.toSQL("%" + _search_value + "%"));
+            lsSQL = MiscUtil.addCondition(lsSQL, _search_key + " LIKE " + SQLUtil.toSQL(_search_value + "%"));
+        
+        //lsSQL = MiscUtil.addCondition(lsSQL, _search_key + " LIKE " + SQLUtil.toSQL("%" + _search_value + "%"));
         
         //add filter on query
         if (!_filter.isEmpty()){
@@ -403,24 +411,37 @@ public class ClientSearch implements iSearch{
         if (null != _search_type)switch (_search_type) {
             case searchClient:
             case searchCustomer:
-            case searchSupplier:
             case searchMechanic:
+            case searchEmployee:
             case searchServiceAdvisor:
                 _fields.add("sClientID"); _fields_descript.add("ID");
                 _fields.add("sClientNm"); _fields_descript.add("Name");
-                _fields.add("cCustomer"); _fields_descript.add("Is Customer");
-                _fields.add("cSupplier"); _fields_descript.add("Is Supplier");
-                _fields.add("cMechanic"); _fields_descript.add("Is Mechanic");
-                _fields.add("cSrvcAdvs"); _fields_descript.add("Is Advisor");
+//                _fields.add("cCustomer"); _fields_descript.add("Is Customer");
+//                _fields.add("cSupplier"); _fields_descript.add("Is Supplier");
+//                _fields.add("cMechanic"); _fields_descript.add("Is Mechanic");
+//                _fields.add("cSrvcAdvs"); _fields_descript.add("Is Advisor");
                 
                 _filter_list.add("a.sClientID"); _filter_description.add("ID");
                 _filter_list.add("a.sClientNm"); _filter_description.add("Name");
                 break;
             case searchAPClient:
+            case searchSupplier:
                 _fields.add("sClientID"); _fields_descript.add("ID");
                 _fields.add("sClientNm"); _fields_descript.add("Name");
                 _fields.add("sCPerson1"); _fields_descript.add("C. Person");
-                _fields.add("sCPPosit1"); _fields_descript.add("Position");
+                _fields.add("nCredLimt"); _fields_descript.add("Crdt Limit");
+                _fields.add("sBrandCde"); _fields_descript.add("Brand");
+                
+                _filter_list.add("a.sClientID"); _filter_description.add("ID");
+                _filter_list.add("a.sClientNm"); _filter_description.add("Name");
+                _filter_list.add("b.sBranchCd"); _filter_description.add("Branch");
+                _filter_list.add("b.sCPerson1"); _filter_description.add("C. Person");
+                _filter_list.add("IFNULL(b.sBrandCde, '')"); _filter_description.add("Brand");
+                break;
+            case searchARClient:
+                _fields.add("sClientID"); _fields_descript.add("ID");
+                _fields.add("sClientNm"); _fields_descript.add("Name");
+                _fields.add("sCPerson1"); _fields_descript.add("C. Person");
                 _fields.add("nCredLimt"); _fields_descript.add("Crdt Limit");
                 
                 _filter_list.add("a.sClientID"); _filter_description.add("ID");
@@ -465,6 +486,7 @@ public class ClientSearch implements iSearch{
                     ", IF(a.cSupplier = '1', 'YES', 'NO') cSupplier" +
                     ", IF(a.cMechanic = '1', 'YES', 'NO') cMechanic" +
                     ", IF(a.cSrvcAdvs = '1', 'YES', 'NO') cSrvcAdvs" +
+                    ", IF(a.cEmployee = '1', 'YES', 'NO') cSrvcAdvs" +
                     ", a.cRecdStat" +
                 " FROM Client_Master a";
     }
@@ -484,10 +506,35 @@ public class ClientSearch implements iSearch{
                     ", b.nCredLimt" +
                     ", b.nOBalance" +
                     ", b.nABalance" +
+                    ", IFNULL(b.sTermCode, '') sTermCode" +
+                    ", b.nDiscount" +
+                    ", IFNULL(b.sBrandCde, '') sBrandCde" +
                 " FROM Client_Master a" +
                     ", AP_Master b" +
                 " WHERE a.sClientID = b.sClientID" +
                     " AND a.cSupplier = '1'";
+    }
+    
+    private String getSQ_Client_AR(){
+        return "SELECT" +
+                    "  a.sClientID" +
+                    ", a.cClientTp" +
+                    ", a.sLastName" +
+                    ", a.sFrstName" +
+                    ", a.sMiddName" +
+                    ", a.sSuffixNm" +
+                    ", a.sClientNm" +
+                    ", a.cRecdStat" +
+                    ", b.sCPerson1" +
+                    ", b.sCPPosit1" +
+                    ", b.nCredLimt" +
+                    ", b.nOBalance" +
+                    ", b.nABalance" +
+                    ", IFNULL(b.sTermCode, '') sTermCode" +
+                    ", b.nDiscount" +
+                " FROM Client_Master a" +
+                    ", AR_Master b" +
+                " WHERE a.sClientID = b.sClientID";
     }
     
     //let outside objects can call this variable without initializing the class.
@@ -497,6 +544,8 @@ public class ClientSearch implements iSearch{
         searchSupplier,
         searchMechanic,
         searchServiceAdvisor,
-        searchAPClient
+        searchAPClient,
+        searchARClient,
+        searchEmployee
     }
 }
