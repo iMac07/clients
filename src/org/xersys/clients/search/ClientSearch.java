@@ -416,10 +416,6 @@ public class ClientSearch implements iSearch{
             case searchServiceAdvisor:
                 _fields.add("sClientID"); _fields_descript.add("ID");
                 _fields.add("sClientNm"); _fields_descript.add("Name");
-//                _fields.add("cCustomer"); _fields_descript.add("Is Customer");
-//                _fields.add("cSupplier"); _fields_descript.add("Is Supplier");
-//                _fields.add("cMechanic"); _fields_descript.add("Is Mechanic");
-//                _fields.add("cSrvcAdvs"); _fields_descript.add("Is Advisor");
                 
                 _filter_list.add("a.sClientID"); _filter_description.add("ID");
                 _filter_list.add("a.sClientNm"); _filter_description.add("Name");
@@ -430,13 +426,11 @@ public class ClientSearch implements iSearch{
                 _fields.add("sClientNm"); _fields_descript.add("Name");
                 _fields.add("sCPerson1"); _fields_descript.add("C. Person");
                 _fields.add("nCredLimt"); _fields_descript.add("Crdt Limit");
-                _fields.add("sBrandCde"); _fields_descript.add("Brand");
                 
                 _filter_list.add("a.sClientID"); _filter_description.add("ID");
                 _filter_list.add("a.sClientNm"); _filter_description.add("Name");
                 _filter_list.add("b.sBranchCd"); _filter_description.add("Branch");
                 _filter_list.add("b.sCPerson1"); _filter_description.add("C. Person");
-                _filter_list.add("IFNULL(b.sBrandCde, '')"); _filter_description.add("Brand");
                 break;
             case searchARClient:
                 _fields.add("sClientID"); _fields_descript.add("ID");
@@ -508,7 +502,6 @@ public class ClientSearch implements iSearch{
                     ", b.nABalance" +
                     ", IFNULL(b.sTermCode, '') sTermCode" +
                     ", b.nDiscount" +
-                    ", IFNULL(b.sBrandCde, '') sBrandCde" +
                 " FROM Client_Master a" +
                     ", AP_Master b" +
                 " WHERE a.sClientID = b.sClientID" +
