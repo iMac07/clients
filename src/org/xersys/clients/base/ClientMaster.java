@@ -675,7 +675,7 @@ public class ClientMaster implements XRecord{
                         default:
                             loJSON = (JSONObject) loArray.get(0);
                             p_oClient.updateObject("sCitizenx", (String) loJSON.get("sCntryCde"));
-                            p_oClient.updateObject("sCntryNme", (String) loJSON.get("sCntryNme"));
+                            p_oClient.updateObject("sCntryNme", (String) loJSON.get("sNational"));
                             p_oClient.updateRow();
                     }
                 } catch (ParseException ex) {
